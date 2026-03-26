@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4efe6;
+  --foreground: #1f2321;
+  --foreground-soft: #5a625b;
+  --muted: #6d746a;
+  --surface: #fffaf1;
+  --border: #d8d0c2;
+  --accent: #107869;
+  --sun: #d38d1c;
+  --sun-deep: #9c680f;
+  --danger: #bf5746;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-foreground-soft: var(--foreground-soft);
+  --color-muted: var(--muted);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-sun: var(--sun);
+  --color-sun-deep: var(--sun-deep);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-ibm-plex-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background:
+    radial-gradient(circle at top left, rgba(16, 120, 105, 0.1), transparent 28%),
+    radial-gradient(circle at top right, rgba(211, 141, 28, 0.12), transparent 22%),
+    var(--background);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-space-grotesk), sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  display: block;
+}
+
+::selection {
+  background: rgba(16, 120, 105, 0.18);
+}
