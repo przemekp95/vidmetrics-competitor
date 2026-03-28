@@ -2,7 +2,8 @@
 
 VidMetrics Competitor Pulse is a Next.js 16 MVP for competitor YouTube analysis. An analyst can
 paste a public channel URL, inspect current-month uploads ranked by momentum, filter the shortlist,
-export CSV, and save temporary snapshots for the current browser demo session.
+export CSV, save temporary snapshots for the current browser demo session, and walk a mock
+enterprise checkout flow that ends in `Pending activation`.
 
 Live URL: `https://vidmetrics-competitor.vercel.app`
 
@@ -12,15 +13,21 @@ Live URL: `https://vidmetrics-competitor.vercel.app`
 - `POST /api/analysis-snapshots` saves a temporary browser-session snapshot.
 - `GET /api/analysis-snapshots` lists snapshots for the active browser session.
 - `DELETE /api/analysis-snapshots` clears snapshots for the active browser session.
+- `GET /api/upgrade-checkout` returns mock checkout state for the active browser session.
+- `POST /api/upgrade-checkout/start` creates or overwrites a session-scoped draft checkout.
+- `POST /api/upgrade-checkout/confirm` submits the mock checkout and returns pending activation.
 - Responsive dashboard with summary cards, momentum chart, sortable table, filters, and CSV export.
+- SaaS shell with plan badge, workspace navigation, gated workflow cards, and checkout drawer.
+- Static legal surfaces for `Terms`, `Privacy`, `Copyright`, and `Legal Notice`.
 
 ## Architecture
 
 The app now uses a small CQRS split without external persistence:
 
-- Query side: analyze competitor channel, list current-session snapshots.
-- Command side: save analysis snapshot, clear current-session snapshots.
+- Query side: analyze competitor channel, list current-session snapshots, get upgrade checkout state.
+- Command side: save analysis snapshot, clear current-session snapshots, start checkout, confirm checkout.
 - Domain: velocity, trend, ranking, and summary calculations.
+- Commercial upgrade bounded context: OOP-first aggregate and value objects for checkout.
 - Read models: transport/UI payloads are mapped outside the domain.
 - Infrastructure: YouTube Data API adapter, session-scoped in-memory snapshot repository, and
   in-memory request guard.
@@ -101,12 +108,41 @@ npx vercel --prod --yes
 - save snapshot works
 - saved snapshots list renders
 - clear session works
+- open pricing drawer
+- start mock checkout draft
+- submit checkout and verify `Pending activation`
 
 ## Repository Notes
 
 - Public competitor data only: watch time, CTR, retention, and impressions are not available.
+- Each analysis request is capped at `100` public uploads from the active month for the selected
+  channel. This keeps API usage and response times predictable for the MVP demo.
 - Snapshot persistence is intentionally non-durable and scoped to the active browser session.
+- Checkout state is intentionally non-durable and scoped to the active browser session.
 - The request guard adds per-process rate limiting and in-flight request deduplication.
+
+## Security And Production Readiness
+
+This repo is hardened enough for a live MVP demo, but it is not a production-grade public backend
+yet.
+
+- `POST /api/analyze` is still a public, quota-consuming endpoint. The current guard is
+  per-process in-memory only, so it is not a durable or globally enforced rate limit.
+- `analysis-snapshots` and `upgrade-checkout` use a browser-session identifier, not real auth or
+  authorization. That is acceptable for a scoped demo, not for a real multi-user product.
+- Write endpoints outside `/api/analyze` do not yet have stronger abuse controls beyond request
+  validation.
+- Browser hardening headers such as a stricter CSP baseline, frame protection, and `nosniff` still
+  need to be added before calling the app production-ready.
+- The legal pages included in this repo are MVP placeholders and still require operator details and
+  legal review before launch.
+
+Recommended production upgrades:
+
+- move rate limiting to a shared durable layer
+- introduce server-managed or signed sessions, then real auth when the product needs it
+- add security headers and origin-aware request protections
+- treat the current API posture as `demo-safe`, not `public-backend-safe`
 
 ## Authors
 
