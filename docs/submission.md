@@ -1,95 +1,98 @@
 # VidMetrics Competitor Pulse Submission Notes
 
-## Build Breakdown
+## What Was Built
 
-This codebase reflects two phases:
+This repo now reflects a signed-in B2B MVP rather than a mock-checkout demo:
 
-- Initial MVP implementation of the competitor analysis dashboard.
-- A hardening and architecture pass that added client-safe errors, query/command separation,
-  browser-session snapshots, rate limiting, and explicit read-model mapping.
-- A SaaS workflow pass that added a product shell, gated workflow surfaces, and a mock enterprise
-  checkout bounded context.
+- competitor YouTube analysis for the active month
+- free current-session snapshots and CSV export
+- Clerk-authenticated workspace on `/` and protected paid routes
+- Stripe sandbox subscription checkout with seat-based pricing
+- webhook-driven billing activation
+- paid account workflows for durable reports, weekly tracking, and multi-channel benchmarks
 
-Tracked time in the hardening pass was roughly 2 hours including implementation, verification,
-deployment repair, and live smoke testing. The original MVP build time was not instrumented closely
- enough in-repo to claim a precise historical duration.
+## Architecture
 
-Tools and frameworks used:
+### CQRS
 
-- Next.js 16 App Router
-- React 19
-- Tailwind 4
-- Vitest
-- Playwright MCP for browser verification
-- Vercel CLI / Vercel deployment
-- YouTube Data API v3
-- OpenAI Codex for scaffolding, refactor acceleration, and verification loops
+- query side: analyze competitor channels, list checkout state, list checkout return state by Stripe
+  session id, list saved reports, list tracked channels
+- command side: save session snapshots, start Stripe checkout, apply Stripe webhook events, save durable reports, save tracked channels
+- the query/read model surfaces stay separate from the domain model, especially for presentation-only fields
 
-What was accelerated or automated:
+### DDD
 
-- scaffolding and refactor slicing
-- route and mapper generation
-- test drafting for the new query/command behavior
-- browser smoke verification against the deployed app
+- `analysis` and `commercial-upgrade` are separate bounded contexts
+- the domain keeps ranking, trend, summary, billing lifecycle, and entitlement rules
+- app handlers orchestrate use cases and repositories
+- Stripe, Clerk, Postgres, and YouTube integrations are adapters behind ports
 
-What was kept manual:
+This is still a pragmatic DDD slice, not a maximalist domain model. The repo preserves useful
+boundaries without introducing heavyweight infrastructure patterns for their own sake.
 
-- architecture decisions and tradeoffs
-- final UI shaping
-- error handling and operator-safe messaging
-- live deployment validation
+### OOP And Hexagonal Boundaries
 
-## Product Thinking
+- `CommercialAccount` is the central aggregate for billing state and entitlements
+- `FeatureAccessPolicy` owns entitlement decisions
+- command and query handlers depend on repository and gateway ports
+- HTTP route handlers remain thin and do not own billing or authorization rules
 
-What still feels missing:
+### Messaging Boundary
 
-- durable persistence for saved reports
-- multi-channel comparison
-- historical snapshots across weeks or months
-- richer narrative insights on why a video is trending
-- auth, sharing, and real team workflows
-- real billing and provisioning behind the mock checkout surface
+- Stripe webhooks are the async messaging boundary for billing activation
+- webhook payloads are verified, normalized into internal lifecycle events, and applied idempotently
+- processed event ids are persisted to prevent replay side effects
+- `/checkout/return` is public, but it only reads a billing projection keyed by `checkoutSessionId`
+  and does not grant access on redirect alone
 
-Version 2 priorities:
+## TDD Status
 
-- durable snapshot storage and report history
-- side-by-side channel comparison
-- richer charting for cadence and engagement efficiency
-- saved views and reusable filters
-- automated refresh or scheduled snapshot capture
-- auth, seat management, and real billing integration
-- finalized legal copy with operator details and counsel-reviewed production policies
+Fresh tests were added for:
 
-Current MVP operating limits:
+- drawer keyboard/focus behavior
+- checkout routes
+- Stripe billing gateway price resolution
+- billing lifecycle transitions and idempotent webhook replay
+- paid workflow entitlement gates
 
-- a single analysis request considers at most `100` public uploads from the active month
-- this cap is intentional for demo responsiveness and YouTube API quota discipline
+Strict red-green evidence exists for the final drawer regression fix in this turn. The broader
+commercial refactor was resumed from an in-progress branch, so full historical TDD cannot be
+proven for every earlier implementation step.
 
-## Architecture Decisions
+## Security And Transport Conclusions
 
-CQRS:
+### What Is Already In Place
 
-- query side: analyze competitor channel, list saved snapshots, get upgrade checkout state
-- command side: save snapshot, clear current-session snapshots, start checkout, confirm checkout
-- command persistence is intentionally non-durable in this iteration to protect demo scope and keep
-  the MVP demo-safe
+- Clerk-backed authentication for the workspace and paid routes
+- signed-out requests to `/` are intentionally redirected to Clerk because the homepage is the main
+  protected workspace
+- per-route auth checks inside handlers
+- same-origin checks on browser-triggered POST routes
+- Stripe signature verification on the webhook route
+- server-side entitlements for durable reports, weekly tracking, and benchmarks
+- idempotent webhook processing
+- public post-checkout polling route keyed by Stripe `session_id`, used only to survive cross-origin
+  return before Clerk fully re-synchronizes on localhost/dev
 
-DDD:
+### What Is Still Missing Before Production
 
-- the domain keeps ranking, trend, and summary logic
-- the new `commercial-upgrade` bounded context uses OOP-first aggregates and value objects:
-  `CheckoutIntent`, `PlanSelection`, `SeatCount`, `BuyerProfile`, `CompanyProfile`
-- presentation-only fields such as `videoUrl`, `durationText`, and month labels are mapped outside
-  the domain
-- the code remains a pragmatic DDD slice rather than a full enterprise model
+- CSP, `nosniff`, frame protection, and stricter browser hardening headers
+- durable shared rate limiting for public quota-consuming flows
+- production incident monitoring and alerting
+- finalized retention and deletion rules
+- live-mode billing operations, tax/VAT, refund handling, and customer portal
 
-TDD:
+## Product Limits
 
-- the new hardening work followed test-first changes for routes, handlers, mapping, and request
-  guards
-- the mock checkout workflow also followed test-first changes for domain rules, command/query
-  handlers, transport, and one component flow
-- the earlier greenfield MVP commits do not provide enough granularity to prove full historical TDD
+Current MVP limits are intentional:
+
+- one analyzed channel at a time
+- no historical benchmark time series
+- no automated weekly cron refresh
+- no full multi-user seat provisioning
+- no customer self-serve billing management
+
+These limits keep the MVP thin while still proving the commercial path end to end.
 
 ## Deployment And Smoke
 
@@ -97,62 +100,18 @@ Production URL:
 
 - `https://vidmetrics-competitor.vercel.app`
 
-Smoke checklist:
+Recommended smoke:
 
-- homepage desktop
-- homepage mobile
-- analyze `@MKBHD`
-- filter and sort
-- CSV export
-- save snapshot
-- list current-session snapshots
-- clear current-session snapshots
-- open pricing drawer
-- start checkout draft
-- submit checkout
-- verify `Pending activation`
+1. open `/` and confirm signed-out users are redirected to Clerk sign-in
+2. sign in
+3. analyze `@MKBHD`
+4. export CSV and save a current-session snapshot
+5. confirm paid workflows are locked
+6. start Stripe sandbox checkout
+7. complete the hosted checkout with a test card
+8. verify the app lands on `/checkout/return?session_id=...` without a second sign-in
+9. verify webhook delivery changes billing state and unlocks paid workflows
 
-## Security Conclusions
+## Production Docs
 
-Current posture:
-
-- good enough for an investor or client demo
-- not sufficient for a real public production API
-
-Why:
-
-- `/api/analyze` is publicly callable and consumes YouTube API quota
-- current rate limiting is in-memory and per-process, so it does not hold across cold starts or
-  multiple instances
-- session-scoped snapshot and checkout routes use a browser-generated session id, not real auth
-- app-level browser hardening headers still need a stronger baseline
-
-What is already in place:
-
-- runtime request validation with Zod
-- sanitized public error messages
-- HTTPS in production
-- a pragmatic CQRS and ports-and-adapters split that keeps transport and anti-abuse logic outside
-  the domain
-
-What should happen before a real production launch:
-
-- move rate limiting to a shared durable layer
-- replace browser-generated session ids with server-managed or signed sessions
-- add security headers such as CSP, frame protection, `nosniff`, and referrer policy
-- add explicit origin and CSRF protections if cookie-based auth is introduced later
-- replace the demo legal pages with finalized operator-specific terms, privacy, copyright, and
-  legal notice content
-
-## Loom
-
-Loom URL: pending recording before submission.
-
-Recommended 5-minute walkthrough:
-
-1. State the client problem and the Monday demo goal.
-2. Show the main analyze flow from pasted channel URL to ranked results.
-3. Show filters, chart, CSV export, current-session snapshots, and the gated SaaS workflow cards.
-4. Walk through the mock checkout and the `Pending activation` state.
-5. Explain CQRS, the commercial-upgrade bounded context, and the request guard in one minute.
-6. Close with tradeoffs, missing v2 items, and why the implementation stayed demo-first.
+Production follow-up and open decisions live in [docs/production-readiness.md](docs/production-readiness.md).

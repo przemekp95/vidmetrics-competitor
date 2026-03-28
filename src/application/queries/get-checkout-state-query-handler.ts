@@ -1,11 +1,11 @@
-import type { CheckoutIntentRepository } from "@/ports/checkout-intent-repository";
+import type { CommercialSubscriptionRepository } from "@/ports/commercial-subscription-repository";
 
 export function createGetCheckoutStateQueryHandler({
   repository,
 }: {
-  repository: CheckoutIntentRepository;
+  repository: CommercialSubscriptionRepository;
 }) {
-  return async function handleGetCheckoutStateQuery(input: { sessionId: string }) {
-    return repository.get(input.sessionId);
+  return async function handleGetCheckoutStateQuery(input: { userId: string }) {
+    return repository.getByUserId(input.userId);
   };
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { startTransition, useDeferredValue, useEffect, useState } from "react";
-import { ArrowUpRight, Download, LoaderCircle, Save, Search, SlidersHorizontal } from "lucide-react";
+import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { ArrowUpRight, Download, FolderKanban, LoaderCircle, Lock, RefreshCw, Save, Search, SlidersHorizontal } from "lucide-react";
 import Image from "next/image";
 
 import type {
@@ -9,14 +9,18 @@ import type {
   ChannelAnalysisReadModel,
   CompetitorVideoReadModel,
   SaveAnalysisSnapshotResponse,
+  TrackedChannelReadModel,
 } from "@/application/read-models/analysis-read-model";
 import type { UpgradeCheckoutReadModel } from "@/application/read-models/upgrade-checkout-read-model";
+import { BenchmarksPanel } from "@/components/benchmarks-panel";
 import { GatedWorkflowsPanel } from "@/components/gated-workflows-panel";
 import { LegalLinks } from "@/components/legal-links";
 import { PerformanceSummaryCards } from "@/components/performance-summary-cards";
 import { SaasShellHeader } from "@/components/saas-shell-header";
+import { SavedReportsPanel } from "@/components/saved-reports-panel";
 import { SavedSnapshotsPanel } from "@/components/saved-snapshots-panel";
 import { SessionUsageOverview } from "@/components/session-usage-overview";
+import { TrackedChannelsPanel } from "@/components/tracked-channels-panel";
 import { UpgradeActivationCard } from "@/components/upgrade-activation-card";
 import { UpgradeCheckoutDrawer } from "@/components/upgrade-checkout-drawer";
 import { UpgradePromptBanner } from "@/components/upgrade-prompt-banner";
@@ -121,23 +125,56 @@ function exportVideosToCsv(channelTitle: string, videos: CompetitorVideoReadMode
   URL.revokeObjectURL(url);
 }
 
+function getShellStatusLabel(checkout: UpgradeCheckoutReadModel | null, isLoadingCheckout: boolean) {
+  if (isLoadingCheckout) {
+    return "Loading billing";
+  }
+
+  if (!checkout) {
+    return "Explorer";
+  }
+
+  if (checkout.status === "active") {
+    return "Active subscription";
+  }
+
+  if (checkout.status === "checkout_pending" || checkout.status === "pending_payment") {
+    return "Awaiting webhook";
+  }
+
+  if (checkout.status === "past_due") {
+    return "Past due";
+  }
+
+  if (checkout.status === "canceled") {
+    return "Canceled";
+  }
+
+  return "Draft checkout";
+}
+
 export function CompetitorAnalysisWorkspace() {
   const [workspaceSessionId, setWorkspaceSessionId] = useState<string | null>(null);
   const [channelUrl, setChannelUrl] = useState("");
   const [analysis, setAnalysis] = useState<ChannelAnalysisReadModel | null>(null);
   const [checkout, setCheckout] = useState<UpgradeCheckoutReadModel | null>(null);
+  const [savedSnapshots, setSavedSnapshots] = useState<AnalysisSnapshotReadModel[]>([]);
+  const [savedReports, setSavedReports] = useState<AnalysisSnapshotReadModel[]>([]);
+  const [trackedChannels, setTrackedChannels] = useState<TrackedChannelReadModel[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [checkoutErrorMessage, setCheckoutErrorMessage] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<StatusMessage>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingSnapshots, setIsLoadingSnapshots] = useState(true);
   const [isLoadingCheckout, setIsLoadingCheckout] = useState(true);
+  const [isLoadingSavedReports, setIsLoadingSavedReports] = useState(false);
+  const [isLoadingTrackedChannels, setIsLoadingTrackedChannels] = useState(false);
   const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
+  const [isSavingSavedReport, setIsSavingSavedReport] = useState(false);
+  const [isSavingTrackedChannel, setIsSavingTrackedChannel] = useState(false);
   const [isClearingSnapshots, setIsClearingSnapshots] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
-  const [isConfirmingCheckout, setIsConfirmingCheckout] = useState(false);
-  const [savedSnapshots, setSavedSnapshots] = useState<AnalysisSnapshotReadModel[]>([]);
-  const [snapshotMessage, setSnapshotMessage] = useState<StatusMessage>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("momentum");
   const [minViews, setMinViews] = useState("");
@@ -148,7 +185,6 @@ export function CompetitorAnalysisWorkspace() {
   const [exportCount, setExportCount] = useState(0);
 
   const deferredSearchTerm = useDeferredValue(searchTerm);
-
   const filteredVideos = sortVideos(
     (analysis?.videos ?? []).filter((video) => {
       const matchesSearch =
@@ -157,28 +193,32 @@ export function CompetitorAnalysisWorkspace() {
       const matchesMinViews = minViews.trim().length === 0 || video.views >= Number(minViews);
       const matchesTrend = trendFilter === "all" || video.trend === trendFilter;
 
-      return matchesSearch && matchesMinViews && matchesTrend && matchesDurationFilter(video, durationFilter);
+      return (
+        matchesSearch &&
+        matchesMinViews &&
+        matchesTrend &&
+        matchesDurationFilter(video, durationFilter)
+      );
     }),
     sortKey,
   );
-
+  const entitlementSet = useMemo(
+    () => new Set(checkout?.entitlements ?? []),
+    [checkout?.entitlements],
+  );
+  const canUseSavedReports = entitlementSet.has("durable_reports");
+  const canUseWeeklyTracking = entitlementSet.has("weekly_tracking");
+  const canUseBenchmarks = entitlementSet.has("multi_channel_benchmarks");
   const chartVideos = filteredVideos.length > 0 ? filteredVideos : analysis?.videos ?? [];
-
   const shellPlanLabel = checkout?.planLabel ?? "Explorer";
-  const shellStatusLabel =
-    checkout?.status === "submitted"
-      ? "Pending activation"
-      : checkout?.status === "draft"
-        ? "Draft checkout"
-        : "Mock billing ready";
-  const usagePlanStatus =
-    checkout?.status === "submitted"
-      ? "Pending activation"
-      : checkout?.status === "draft"
-        ? "Draft checkout"
-        : isLoadingCheckout
-          ? "Loading billing"
-          : "Explorer";
+  const shellStatusLabel = getShellStatusLabel(checkout, isLoadingCheckout);
+  const usagePlanStatus = shellStatusLabel;
+  const visibleUpgradePromptSource =
+    upgradePromptSource === "snapshot" && canUseSavedReports && canUseWeeklyTracking
+      ? null
+      : upgradePromptSource === "export" && canUseBenchmarks
+        ? null
+        : upgradePromptSource;
 
   useEffect(() => {
     const existingSessionId = window.sessionStorage.getItem(WORKSPACE_SESSION_STORAGE_KEY);
@@ -216,7 +256,7 @@ export function CompetitorAnalysisWorkspace() {
         setSavedSnapshots(payload.snapshots);
       });
     } catch (error) {
-      setSnapshotMessage({
+      setStatusMessage({
         tone: "error",
         text:
           error instanceof Error ? error.message : "Unable to load saved snapshots right now.",
@@ -226,15 +266,12 @@ export function CompetitorAnalysisWorkspace() {
     }
   }
 
-  async function loadCheckoutState(sessionId: string) {
+  async function loadCheckoutState() {
     setIsLoadingCheckout(true);
 
     try {
       const response = await fetch("/api/upgrade-checkout", {
         method: "GET",
-        headers: {
-          "x-vidmetrics-session-id": sessionId,
-        },
       });
 
       const payload = await readApiResponse<{
@@ -258,14 +295,95 @@ export function CompetitorAnalysisWorkspace() {
     }
   }
 
+  async function loadSavedReports() {
+    setIsLoadingSavedReports(true);
+
+    try {
+      const response = await fetch("/api/saved-reports", {
+        method: "GET",
+      });
+
+      const payload = await readApiResponse<{
+        reports: AnalysisSnapshotReadModel[];
+      }>(response, {
+        errorMessage: "Unable to load saved reports.",
+        unexpectedResponseMessage:
+          "Saved reports are temporarily unavailable. Refresh and try again.",
+      });
+
+      startTransition(() => {
+        setSavedReports(payload.reports);
+      });
+    } catch (error) {
+      setStatusMessage({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Unable to load saved reports right now.",
+      });
+    } finally {
+      setIsLoadingSavedReports(false);
+    }
+  }
+
+  async function loadTrackedChannels() {
+    setIsLoadingTrackedChannels(true);
+
+    try {
+      const response = await fetch("/api/tracked-channels", {
+        method: "GET",
+      });
+
+      const payload = await readApiResponse<{
+        trackedChannels: TrackedChannelReadModel[];
+      }>(response, {
+        errorMessage: "Unable to load tracked channels.",
+        unexpectedResponseMessage:
+          "Tracked channels are temporarily unavailable. Refresh and try again.",
+      });
+
+      startTransition(() => {
+        setTrackedChannels(payload.trackedChannels);
+      });
+    } catch (error) {
+      setStatusMessage({
+        tone: "error",
+        text:
+          error instanceof Error ? error.message : "Unable to load tracked channels right now.",
+      });
+    } finally {
+      setIsLoadingTrackedChannels(false);
+    }
+  }
+
   useEffect(() => {
     if (!workspaceSessionId) {
       return;
     }
 
     void loadSavedSnapshots(workspaceSessionId);
-    void loadCheckoutState(workspaceSessionId);
+    void loadCheckoutState();
   }, [workspaceSessionId]);
+
+  useEffect(() => {
+    if (canUseSavedReports) {
+      void loadSavedReports();
+      return;
+    }
+
+    startTransition(() => {
+      setSavedReports([]);
+    });
+  }, [canUseSavedReports]);
+
+  useEffect(() => {
+    if (canUseWeeklyTracking) {
+      void loadTrackedChannels();
+      return;
+    }
+
+    startTransition(() => {
+      setTrackedChannels([]);
+    });
+  }, [canUseWeeklyTracking]);
 
   async function runAnalysis(nextUrl: string) {
     setIsSubmitting(true);
@@ -318,7 +436,7 @@ export function CompetitorAnalysisWorkspace() {
     }
 
     setIsSavingSnapshot(true);
-    setSnapshotMessage(null);
+    setStatusMessage(null);
 
     try {
       if (!workspaceSessionId) {
@@ -342,9 +460,9 @@ export function CompetitorAnalysisWorkspace() {
           "Snapshot saving is temporarily unavailable. Refresh and try again.",
       });
 
-      setSnapshotMessage({
+      setStatusMessage({
         tone: "success",
-        text: `Snapshot saved at ${new Date(saved.savedAt).toLocaleTimeString("en-US", {
+        text: `Session snapshot saved at ${new Date(saved.savedAt).toLocaleTimeString("en-US", {
           hour: "numeric",
           minute: "2-digit",
         })}.`,
@@ -352,12 +470,96 @@ export function CompetitorAnalysisWorkspace() {
       setUpgradePromptSource("snapshot");
       await loadSavedSnapshots(workspaceSessionId);
     } catch (error) {
-      setSnapshotMessage({
+      setStatusMessage({
         tone: "error",
         text: error instanceof Error ? error.message : "Unable to save this snapshot right now.",
       });
     } finally {
       setIsSavingSnapshot(false);
+    }
+  }
+
+  async function handleSaveSavedReport() {
+    if (!analysis) {
+      return;
+    }
+
+    setIsSavingSavedReport(true);
+    setStatusMessage(null);
+
+    try {
+      const response = await fetch("/api/saved-reports", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          analysis,
+        }),
+      });
+
+      const saved = await readApiResponse<SaveAnalysisSnapshotResponse>(response, {
+        errorMessage: "Unable to save this durable report.",
+        unexpectedResponseMessage:
+          "Saved reports are temporarily unavailable. Refresh and try again.",
+      });
+
+      setStatusMessage({
+        tone: "success",
+        text: `Durable report saved at ${new Date(saved.savedAt).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        })}.`,
+      });
+      await loadSavedReports();
+    } catch (error) {
+      setStatusMessage({
+        tone: "error",
+        text:
+          error instanceof Error ? error.message : "Unable to save this durable report right now.",
+      });
+    } finally {
+      setIsSavingSavedReport(false);
+    }
+  }
+
+  async function handleTrackCurrentChannel() {
+    if (!analysis) {
+      return;
+    }
+
+    setIsSavingTrackedChannel(true);
+    setStatusMessage(null);
+
+    try {
+      const response = await fetch("/api/tracked-channels", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          analysis,
+        }),
+      });
+
+      await readApiResponse<{ trackedAt: string }>(response, {
+        errorMessage: "Unable to track this channel.",
+        unexpectedResponseMessage:
+          "Tracked channels are temporarily unavailable. Refresh and try again.",
+      });
+
+      setStatusMessage({
+        tone: "success",
+        text: `${analysis.channel.title} is now saved in weekly tracking.`,
+      });
+      await loadTrackedChannels();
+    } catch (error) {
+      setStatusMessage({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Unable to track this channel right now.",
+      });
+    } finally {
+      setIsSavingTrackedChannel(false);
     }
   }
 
@@ -367,7 +569,7 @@ export function CompetitorAnalysisWorkspace() {
     }
 
     setIsClearingSnapshots(true);
-    setSnapshotMessage(null);
+    setStatusMessage(null);
 
     try {
       const response = await fetch("/api/analysis-snapshots", {
@@ -386,12 +588,12 @@ export function CompetitorAnalysisWorkspace() {
       startTransition(() => {
         setSavedSnapshots([]);
       });
-      setSnapshotMessage({
+      setStatusMessage({
         tone: "success",
         text: "Current-session snapshots cleared.",
       });
     } catch (error) {
-      setSnapshotMessage({
+      setStatusMessage({
         tone: "error",
         text: error instanceof Error ? error.message : "Unable to clear this demo session.",
       });
@@ -405,12 +607,6 @@ export function CompetitorAnalysisWorkspace() {
     billingCycle: "monthly" | "annual";
     seats: number;
   }) {
-    if (!workspaceSessionId) {
-      const error = new Error("Browser session is still initializing. Try again in a moment.");
-      setCheckoutErrorMessage(error.message);
-      throw error;
-    }
-
     setIsStartingCheckout(true);
     setCheckoutErrorMessage(null);
 
@@ -419,13 +615,13 @@ export function CompetitorAnalysisWorkspace() {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          "x-vidmetrics-session-id": workspaceSessionId,
         },
         body: JSON.stringify(input),
       });
 
       const payload = await readApiResponse<{
         checkout: UpgradeCheckoutReadModel;
+        checkoutUrl: string;
       }>(response, {
         errorMessage: "Unable to start checkout.",
         unexpectedResponseMessage:
@@ -434,7 +630,9 @@ export function CompetitorAnalysisWorkspace() {
 
       startTransition(() => {
         setCheckout(payload.checkout);
+        setUpgradePromptSource(null);
       });
+      window.location.assign(payload.checkoutUrl);
     } catch (error) {
       const nextError =
         error instanceof Error ? error : new Error("Unable to start checkout right now.");
@@ -442,52 +640,6 @@ export function CompetitorAnalysisWorkspace() {
       throw nextError;
     } finally {
       setIsStartingCheckout(false);
-    }
-  }
-
-  async function handleConfirmCheckout(input: {
-    buyerName: string;
-    buyerEmail: string;
-    companyName: string;
-  }) {
-    if (!workspaceSessionId) {
-      const error = new Error("Browser session is still initializing. Try again in a moment.");
-      setCheckoutErrorMessage(error.message);
-      throw error;
-    }
-
-    setIsConfirmingCheckout(true);
-    setCheckoutErrorMessage(null);
-
-    try {
-      const response = await fetch("/api/upgrade-checkout/confirm", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-vidmetrics-session-id": workspaceSessionId,
-        },
-        body: JSON.stringify(input),
-      });
-
-      const payload = await readApiResponse<{
-        checkout: UpgradeCheckoutReadModel;
-      }>(response, {
-        errorMessage: "Unable to submit checkout.",
-        unexpectedResponseMessage:
-          "Checkout submission is temporarily unavailable. Refresh and try again.",
-      });
-
-      startTransition(() => {
-        setCheckout(payload.checkout);
-        setUpgradePromptSource(null);
-      });
-    } catch (error) {
-      const nextError =
-        error instanceof Error ? error : new Error("Unable to submit checkout right now.");
-      setCheckoutErrorMessage(nextError.message);
-      throw nextError;
-    } finally {
-      setIsConfirmingCheckout(false);
     }
   }
 
@@ -527,6 +679,9 @@ export function CompetitorAnalysisWorkspace() {
       <SaasShellHeader
         planLabel={shellPlanLabel}
         statusLabel={shellStatusLabel}
+        canUseSavedReports={canUseSavedReports}
+        canUseWeeklyTracking={canUseWeeklyTracking}
+        canUseBenchmarks={canUseBenchmarks}
         onOpenCheckout={handleOpenCheckout}
       />
 
@@ -543,8 +698,8 @@ export function CompetitorAnalysisWorkspace() {
               See which competitor videos are winning this month.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-(--color-muted) sm:text-lg">
-              Paste a YouTube channel URL to surface current-month uploads, rank them by public
-              view velocity, and move cleanly from analysis into reports, exports, and mock
+              Paste a YouTube channel URL to analyze current-month uploads, then move from free
+              session snapshots into paid saved reports, weekly tracking, and Stripe-backed billing
               activation.
             </p>
           </div>
@@ -559,13 +714,16 @@ export function CompetitorAnalysisWorkspace() {
               </p>
             </div>
             <p>
-              Rankings use views per day and engagement from public YouTube data. Watch time, CTR,
-              impressions, and retention are not available for competitor channels.
+              Rankings use views per day and engagement from public YouTube data. Paid workflows
+              unlock account-level storage, not private analytics for competitor channels.
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 rounded-4xl border border-(--color-border) bg-[rgba(255,255,255,0.88)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] sm:p-5">
+        <form
+          onSubmit={handleSubmit}
+          className="mt-8 rounded-4xl border border-(--color-border) bg-[rgba(255,255,255,0.88)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] sm:p-5"
+        >
           <div className="flex flex-col gap-3 xl:flex-row">
             <label className="flex-1">
               <span className="sr-only">YouTube channel URL</span>
@@ -573,7 +731,7 @@ export function CompetitorAnalysisWorkspace() {
                 value={channelUrl}
                 onChange={(event) => setChannelUrl(event.target.value)}
                 placeholder="https://www.youtube.com/@channelname"
-                className="h-14 w-full rounded-2xl border border-(--color-border) bg-[rgba(255,252,246,0.92)] px-5 text-base text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
+                className="h-14 w-full rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-5 text-base text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
               />
             </label>
             <button
@@ -604,7 +762,7 @@ export function CompetitorAnalysisWorkspace() {
                   setChannelUrl(sample);
                   void runAnalysis(sample);
                 }}
-                className="rounded-full border border-(--color-border) bg-white px-3 py-2 text-xs font-medium text-(--color-muted) transition hover:border-(--color-accent) hover:text-(--color-accent)"
+                className="rounded-full border border-(--border-interactive) bg-white px-3 py-2 text-xs font-medium text-(--color-muted) transition hover:border-(--color-accent) hover:text-(--color-accent)"
               >
                 Try {sample.replace("https://www.youtube.com/", "")}
               </button>
@@ -612,7 +770,10 @@ export function CompetitorAnalysisWorkspace() {
           </div>
 
           {errorMessage ? (
-            <div className="mt-4 rounded-2xl border border-[rgba(191,87,70,0.2)] bg-[rgba(255,240,235,0.85)] px-4 py-3 text-sm text-(--color-danger)">
+            <div
+              role="alert"
+              className="mt-4 rounded-2xl border border-[rgba(191,87,70,0.2)] bg-[rgba(255,240,235,0.85)] px-4 py-3 text-sm text-(--color-danger)"
+            >
               {errorMessage}
             </div>
           ) : null}
@@ -628,10 +789,7 @@ export function CompetitorAnalysisWorkspace() {
 
       <UpgradeActivationCard checkout={checkout} onOpenCheckout={handleOpenCheckout} />
 
-      <UpgradePromptBanner
-        source={checkout?.status === "submitted" ? null : upgradePromptSource}
-        onOpenCheckout={handleOpenCheckout}
-      />
+      <UpgradePromptBanner source={visibleUpgradePromptSource} onOpenCheckout={handleOpenCheckout} />
 
       <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <article className="rounded-4xl border border-(--color-border) bg-white/85 p-6 shadow-[0_18px_50px_rgba(31,35,33,0.07)]">
@@ -653,17 +811,17 @@ export function CompetitorAnalysisWorkspace() {
                 Client-ready
               </p>
               <p className="mt-2 text-sm leading-6 text-(--color-muted)">
-                Summary cards, chart, filters, export, and mock checkout are designed for strategy
+                Summary cards, chart, filters, export, and storage workflows are built for strategy
                 calls, not just developer inspection.
               </p>
             </div>
             <div>
               <p className="text-2xl font-semibold tracking-tight text-(--color-foreground)">
-                SaaS workflow
+                Paid workflow
               </p>
               <p className="mt-2 text-sm leading-6 text-(--color-muted)">
-                Analysts can move from raw competitor analysis into saved reports, upgrade paths,
-                and a believable billing state without leaving VidMetrics.
+                Stripe sandbox checkout and webhook-confirmed activation gate the durable account
+                workflows behind a real billing state.
               </p>
             </div>
           </div>
@@ -675,8 +833,8 @@ export function CompetitorAnalysisWorkspace() {
           </p>
           <ul className="mt-5 space-y-4 text-sm leading-6 text-(--color-muted)">
             <li>Paste a channel, analyze current-month uploads, and rank them by momentum.</li>
-            <li>Save a session report or export the filtered shortlist for client handoff.</li>
-            <li>Open billing to turn the demo into a mock enterprise checkout workflow.</li>
+            <li>Save a free session snapshot or export the filtered shortlist immediately.</li>
+            <li>Upgrade the account to persist saved reports, weekly tracking, and benchmarks.</li>
           </ul>
         </article>
       </section>
@@ -727,7 +885,7 @@ export function CompetitorAnalysisWorkspace() {
                   type="button"
                   onClick={handleSaveSnapshot}
                   disabled={isSavingSnapshot}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--color-border) bg-white px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent) disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--border-interactive) bg-white px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent) disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSavingSnapshot ? (
                     <>
@@ -737,16 +895,76 @@ export function CompetitorAnalysisWorkspace() {
                   ) : (
                     <>
                       <Save className="h-4 w-4" />
-                      Save snapshot
+                      Save session snapshot
                     </>
                   )}
                 </button>
+
+                {canUseSavedReports ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleSaveSavedReport()}
+                    disabled={isSavingSavedReport}
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.9)] px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent) disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSavingSavedReport ? (
+                      <>
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                        Saving report
+                      </>
+                    ) : (
+                      <>
+                        <FolderKanban className="h-4 w-4" />
+                        Save durable report
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleOpenCheckout}
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-dashed border-(--border-interactive) bg-[rgba(255,252,246,0.9)] px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent)"
+                  >
+                    <Lock className="h-4 w-4" />
+                    Unlock durable reports
+                  </button>
+                )}
+
+                {canUseWeeklyTracking ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleTrackCurrentChannel()}
+                    disabled={isSavingTrackedChannel}
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.9)] px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent) disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSavingTrackedChannel ? (
+                      <>
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                        Tracking
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4" />
+                        Track current channel
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleOpenCheckout}
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-dashed border-(--border-interactive) bg-[rgba(255,252,246,0.9)] px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent)"
+                  >
+                    <Lock className="h-4 w-4" />
+                    Unlock tracking
+                  </button>
+                )}
 
                 <button
                   type="button"
                   onClick={handleExportCsv}
                   disabled={filteredVideos.length === 0}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--color-border) bg-[rgba(255,252,246,0.9)] px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent) disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.9)] px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent) disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Download className="h-4 w-4" />
                   Export filtered CSV
@@ -780,7 +998,7 @@ export function CompetitorAnalysisWorkspace() {
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                   placeholder="Find a headline"
-                  className="h-12 rounded-2xl border border-(--color-border) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
+                  className="h-12 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
                 />
               </label>
 
@@ -789,7 +1007,7 @@ export function CompetitorAnalysisWorkspace() {
                 <select
                   value={sortKey}
                   onChange={(event) => setSortKey(event.target.value as SortKey)}
-                  className="h-12 rounded-2xl border border-(--color-border) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
+                  className="h-12 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
                 >
                   <option value="momentum">Views / day</option>
                   <option value="views">Total views</option>
@@ -806,7 +1024,7 @@ export function CompetitorAnalysisWorkspace() {
                   onChange={(event) => setMinViews(event.target.value)}
                   inputMode="numeric"
                   placeholder="e.g. 25000"
-                  className="h-12 rounded-2xl border border-(--color-border) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
+                  className="h-12 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
                 />
               </label>
 
@@ -816,7 +1034,7 @@ export function CompetitorAnalysisWorkspace() {
                   <select
                     value={trendFilter}
                     onChange={(event) => setTrendFilter(event.target.value as TrendFilter)}
-                    className="h-12 rounded-2xl border border-(--color-border) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
+                    className="h-12 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
                   >
                     <option value="all">All trends</option>
                     <option value="hot">Hot</option>
@@ -830,7 +1048,7 @@ export function CompetitorAnalysisWorkspace() {
                   <select
                     value={durationFilter}
                     onChange={(event) => setDurationFilter(event.target.value as DurationFilter)}
-                    className="h-12 rounded-2xl border border-(--color-border) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
+                    className="h-12 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
                   >
                     <option value="all">All lengths</option>
                     <option value="under10">Under 10 min</option>
@@ -854,8 +1072,8 @@ export function CompetitorAnalysisWorkspace() {
             Paste a channel to generate a live competitor snapshot.
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-(--color-muted)">
-            You&apos;ll get summary cards, a velocity chart, a sortable video table, a CSV export,
-            and a mock billing path that makes the workspace feel like a real SaaS product.
+            You&apos;ll get summary cards, a velocity chart, a sortable video table, free session
+            snapshots, and paid workflow surfaces that unlock through Stripe sandbox checkout.
           </p>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             <div className="rounded-3xl border border-(--color-border) bg-[rgba(255,252,246,0.85)] p-5 text-left">
@@ -877,7 +1095,7 @@ export function CompetitorAnalysisWorkspace() {
                 Analyze current-month uploads
               </p>
               <p className="mt-2 text-sm leading-6 text-(--color-muted)">
-                Ranks videos by views per day while preserving raw view, comment, and engagement
+                Rank videos by views per day while preserving raw view, comment, and engagement
                 context.
               </p>
             </div>
@@ -886,18 +1104,18 @@ export function CompetitorAnalysisWorkspace() {
                 3
               </p>
               <p className="mt-3 text-xl font-semibold tracking-tight text-(--color-foreground)">
-                Upgrade the workspace
+                Activate paid workflows
               </p>
               <p className="mt-2 text-sm leading-6 text-(--color-muted)">
-                Walk the client from one-off analysis into saved reports, recurring tracking, and
-                a mock checkout that ends in pending activation.
+                Move from one-off analysis into durable saved reports, weekly tracking, and
+                benchmarks after Stripe confirms billing.
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={handleOpenCheckout}
-            className="mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--color-border) bg-white px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent)"
+            className="mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--border-interactive) bg-white px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent)"
           >
             Open pricing workflow
             <ArrowUpRight className="h-4 w-4" />
@@ -905,15 +1123,17 @@ export function CompetitorAnalysisWorkspace() {
         </section>
       )}
 
-      {snapshotMessage ? (
+      {statusMessage ? (
         <section
+          role={statusMessage.tone === "success" ? "status" : "alert"}
+          aria-live={statusMessage.tone === "success" ? "polite" : "assertive"}
           className={`rounded-3xl border px-4 py-3 text-sm ${
-            snapshotMessage.tone === "success"
+            statusMessage.tone === "success"
               ? "border-[rgba(16,120,105,0.2)] bg-[rgba(232,247,243,0.9)] text-(--color-accent)"
               : "border-[rgba(191,87,70,0.2)] bg-[rgba(255,240,235,0.85)] text-(--color-danger)"
           }`}
         >
-          {snapshotMessage.text}
+          {statusMessage.text}
         </section>
       ) : null}
 
@@ -924,24 +1144,54 @@ export function CompetitorAnalysisWorkspace() {
         onClear={handleClearSnapshots}
       />
 
-      <GatedWorkflowsPanel checkout={checkout} onOpenCheckout={handleOpenCheckout} />
+      <SavedReportsPanel
+        reports={savedReports}
+        isLoading={isLoadingSavedReports}
+        isSaving={isSavingSavedReport}
+        isEnabled={canUseSavedReports}
+        analysis={analysis}
+        onSaveCurrentAnalysis={handleSaveSavedReport}
+        onOpenCheckout={handleOpenCheckout}
+      />
+
+      <TrackedChannelsPanel
+        trackedChannels={trackedChannels}
+        isLoading={isLoadingTrackedChannels}
+        isSaving={isSavingTrackedChannel}
+        isEnabled={canUseWeeklyTracking}
+        analysis={analysis}
+        onTrackCurrentChannel={handleTrackCurrentChannel}
+        onOpenCheckout={handleOpenCheckout}
+      />
+
+      <BenchmarksPanel
+        reports={savedReports}
+        trackedChannels={trackedChannels}
+        isEnabled={canUseBenchmarks}
+        onOpenCheckout={handleOpenCheckout}
+      />
+
+      <GatedWorkflowsPanel
+        canUseSavedReports={canUseSavedReports}
+        canUseWeeklyTracking={canUseWeeklyTracking}
+        canUseBenchmarks={canUseBenchmarks}
+        onOpenCheckout={handleOpenCheckout}
+      />
 
       <UpgradeCheckoutDrawer
-        key={`${isCheckoutOpen ? "open" : "closed"}:${checkout?.status ?? "empty"}:${checkout?.confirmationCode ?? checkout?.planId ?? "none"}`}
+        key={`${isCheckoutOpen ? "open" : "closed"}:${checkout?.status ?? "empty"}:${checkout?.checkoutSessionId ?? checkout?.planId ?? "none"}`}
         isOpen={isCheckoutOpen}
         checkout={checkout}
         isStarting={isStartingCheckout}
-        isConfirming={isConfirmingCheckout}
         errorMessage={checkoutErrorMessage}
         onClose={handleCloseCheckout}
         onStartCheckout={handleStartCheckout}
-        onConfirmCheckout={handleConfirmCheckout}
       />
 
       <footer className="flex flex-col gap-3 pb-8 text-sm text-(--color-muted)">
         <p>
-          Built for fast demo review. Rankings reflect public YouTube data only and refresh on
-          demand.
+          Built for B2B MVP review. Rankings reflect public YouTube data only, and paid workflows
+          depend on Stripe sandbox billing state rather than local mock activation.
         </p>
         <LegalLinks linkClassName="font-medium text-(--color-foreground)" />
       </footer>

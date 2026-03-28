@@ -33,8 +33,9 @@ export default function LegalNoticePage() {
       <section>
         <h2>3. Product status</h2>
         <p>
-          The current deployment is an MVP demo environment with mock activation, temporary
-          session-scoped storage, and public-data-only YouTube analysis.
+          The current deployment is a signed-in B2B MVP with public-data-only YouTube analysis,
+          temporary session snapshots, durable account storage, and Stripe sandbox subscription
+          checkout with webhook-gated feature activation.
         </p>
       </section>
 
@@ -42,7 +43,9 @@ export default function LegalNoticePage() {
         <h2>4. Hosting and infrastructure</h2>
         <p>
           Replace before production launch with the final list of material hosting and infrastructure
-          providers if disclosure is required by the operator&apos;s chosen legal notices format.
+          providers if disclosure is required by the operator&apos;s chosen legal notices format. At
+          MVP level this includes at least the application host, authentication provider, billing
+          provider, database host, and YouTube Data API.
         </p>
       </section>
     </LegalPageShell>

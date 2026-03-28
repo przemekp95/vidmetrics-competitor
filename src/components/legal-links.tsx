@@ -3,6 +3,7 @@ import Link from "next/link";
 const legalLinks = [
   { href: "/terms", label: "Terms" },
   { href: "/privacy", label: "Privacy" },
+  { href: "/accessibility", label: "Accessibility" },
   { href: "/copyright", label: "Copyright" },
   { href: "/legal", label: "Legal Notice" },
 ];
@@ -23,7 +24,7 @@ export function LegalLinks({
         <Link
           key={item.href}
           href={item.href}
-          className={`transition hover:text-(--color-accent) ${linkClassName}`.trim()}
+          className={`underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-3 transition hover:text-(--color-accent) ${linkClassName}`.trim()}
         >
           {item.label}
         </Link>

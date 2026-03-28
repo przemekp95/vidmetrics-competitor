@@ -3,6 +3,7 @@ import type { AnalysisSnapshot, ChannelAnalysis } from "@/domain/analysis/types"
 import type {
   AnalysisSnapshotReadModel,
   ChannelAnalysisReadModel,
+  TrackedChannelReadModel,
 } from "@/application/read-models/analysis-read-model";
 import { durationTextToSeconds } from "@/lib/formatters";
 
@@ -107,6 +108,18 @@ export function toAnalysisSnapshotReadModel(
       label: formatMonthWindowLabel(snapshot.analysis.window.startAt),
       monthKey: snapshot.analysis.window.monthKey,
     },
+    summary: {
+      uploadCount: snapshot.analysis.summary.uploadCount,
+      averageViewsPerDay: snapshot.analysis.summary.averageViewsPerDay,
+      averageEngagementRate: snapshot.analysis.summary.averageEngagementRate,
+      topPerformer: snapshot.analysis.summary.topPerformer
+        ? {
+            title: snapshot.analysis.summary.topPerformer.title,
+            viewsPerDay: snapshot.analysis.summary.topPerformer.viewsPerDay,
+            videoUrl: toVideoUrl(snapshot.analysis.summary.topPerformer.videoId),
+          }
+        : null,
+    },
     topPerformer: snapshot.analysis.summary.topPerformer
       ? {
           title: snapshot.analysis.summary.topPerformer.title,
@@ -114,5 +127,28 @@ export function toAnalysisSnapshotReadModel(
           videoUrl: toVideoUrl(snapshot.analysis.summary.topPerformer.videoId),
         }
       : null,
+  };
+}
+
+export function toTrackedChannelReadModel(input: {
+  trackedChannelId: string;
+  createdAt: string;
+  refreshedAt: string;
+  analysis: ChannelAnalysis;
+}): TrackedChannelReadModel {
+  const analysis = toChannelAnalysisReadModel(input.analysis);
+
+  return {
+    trackedChannelId: input.trackedChannelId,
+    createdAt: input.createdAt,
+    refreshedAt: input.refreshedAt,
+    channel: {
+      id: analysis.channel.id,
+      title: analysis.channel.title,
+      channelUrl: analysis.channel.channelUrl,
+      avatarUrl: analysis.channel.avatarUrl,
+    },
+    window: analysis.window,
+    summary: analysis.summary,
   };
 }

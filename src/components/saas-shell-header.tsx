@@ -1,18 +1,30 @@
+"use client";
+
+import Link from "next/link";
+import { UserButton } from "@clerk/nextjs";
 import { BarChart3, ChevronRight, CreditCard } from "lucide-react";
 
 export function SaasShellHeader({
   planLabel,
   statusLabel,
+  canUseSavedReports,
+  canUseWeeklyTracking,
+  canUseBenchmarks,
   onOpenCheckout,
 }: {
   planLabel: string;
   statusLabel: string;
+  canUseSavedReports: boolean;
+  canUseWeeklyTracking: boolean;
+  canUseBenchmarks: boolean;
   onOpenCheckout: () => void;
 }) {
   const navItems = [
     { label: "Overview", href: "#overview" },
-    { label: "Saved Reports", href: "#saved-reports" },
-    { label: "Weekly Tracking", href: "#weekly-tracking" },
+    { label: "Session Snapshots", href: "#session-snapshots" },
+    { label: "Saved Reports", href: canUseSavedReports ? "/reports" : "#durable-reports" },
+    { label: "Weekly Tracking", href: canUseWeeklyTracking ? "/tracking" : "#weekly-tracking" },
+    { label: "Benchmarks", href: canUseBenchmarks ? "/benchmarks" : "#benchmarks" },
     { label: "Billing", href: "#billing" },
   ];
 
@@ -36,19 +48,19 @@ export function SaasShellHeader({
 
           <nav className="flex flex-wrap items-center gap-2 lg:ml-6">
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
                 className="rounded-full px-3 py-2 text-sm font-medium text-[color:var(--color-muted)] transition hover:bg-[rgba(16,120,105,0.08)] hover:text-[color:var(--color-accent)]"
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
           </nav>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <div className="rounded-full border border-[color:var(--color-border)] bg-[rgba(255,252,246,0.92)] px-4 py-2 text-sm text-[color:var(--color-muted)]">
+          <div className="rounded-full border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-4 py-2 text-sm text-[color:var(--color-muted)]">
             <span className="font-semibold text-[color:var(--color-foreground)]">{planLabel}</span>
             <span className="mx-2 text-[rgba(31,35,33,0.25)]">&bull;</span>
             {statusLabel}
@@ -64,16 +76,8 @@ export function SaasShellHeader({
             <ChevronRight className="h-4 w-4" />
           </button>
 
-          <div className="flex items-center gap-3 rounded-full border border-[color:var(--color-border)] bg-white px-3 py-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(16,120,105,0.14)] text-sm font-semibold text-[color:var(--color-accent)]">
-              AP
-            </div>
-            <div className="pr-2">
-              <p className="text-sm font-semibold text-[color:var(--color-foreground)]">
-                Agency PM
-              </p>
-              <p className="text-xs text-[color:var(--color-muted)]">Enterprise workspace</p>
-            </div>
+          <div className="flex items-center gap-3 rounded-full border border-(--border-interactive) bg-white px-3 py-2">
+            <UserButton />
           </div>
         </div>
       </div>

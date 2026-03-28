@@ -94,7 +94,7 @@ export function VideoResults({
                         href={video.videoUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="line-clamp-2 text-base font-semibold tracking-tight text-[color:var(--color-foreground)] transition-colors hover:text-[color:var(--color-accent)]"
+                        className="line-clamp-2 text-base font-semibold tracking-tight text-[color:var(--color-foreground)] underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-4 transition-colors hover:text-[color:var(--color-accent)]"
                       >
                         {video.title}
                       </a>
@@ -150,7 +150,7 @@ export function VideoResults({
                 href={video.videoUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-lg font-semibold tracking-tight text-[color:var(--color-foreground)]"
+                className="text-lg font-semibold tracking-tight text-[color:var(--color-foreground)] underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-4"
               >
                 {video.title}
               </a>

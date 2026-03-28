@@ -1,20 +1,22 @@
 import type {
   BillingCycleValue,
   CheckoutStatus,
+  FeatureEntitlement,
   PlanId,
 } from "@/domain/commercial-upgrade/types";
 
 export type UpgradeCheckoutReadModel = {
   status: CheckoutStatus;
-  planId: PlanId;
-  planLabel: string;
-  billingCycle: BillingCycleValue;
-  seats: number;
-  displayPrice: string;
+  planId: PlanId | null;
+  planLabel: string | null;
+  billingCycle: BillingCycleValue | null;
+  seats: number | null;
+  displayPrice: string | null;
   includedFeatures: string[];
-  buyerName: string | null;
-  buyerEmail: string | null;
-  companyName: string | null;
-  submittedAt: string | null;
-  confirmationCode: string | null;
+  entitlements: FeatureEntitlement[];
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  checkoutSessionId: string | null;
+  checkoutCompletedAt: string | null;
+  lastPaidAt: string | null;
 };

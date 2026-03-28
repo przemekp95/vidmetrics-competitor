@@ -6,7 +6,8 @@
   --foreground-soft: #5a625b;
   --muted: #6d746a;
   --surface: #fffaf1;
-  --border: #d8d0c2;
+  --border-subtle: #d8d0c2;
+  --border-interactive: #7c847a;
   --accent: #107869;
   --sun: #d38d1c;
   --sun-deep: #9c680f;
@@ -19,7 +20,9 @@
   --color-foreground-soft: var(--foreground-soft);
   --color-muted: var(--muted);
   --color-surface: var(--surface);
-  --color-border: var(--border);
+  --color-border: var(--border-subtle);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-interactive: var(--border-interactive);
   --color-accent: var(--accent);
   --color-sun: var(--sun);
   --color-sun-deep: var(--sun-deep);

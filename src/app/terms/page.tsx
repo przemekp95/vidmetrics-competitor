@@ -12,14 +12,15 @@ export default function TermsPage() {
     <LegalPageShell
       eyebrow="Terms"
       title="Terms of Use"
-      summary="These terms are written for the current MVP demo and should be finalized with operator details, governing law, and production controls before launch."
+      summary="These terms describe the signed-in B2B MVP, including Stripe sandbox subscriptions, webhook-gated feature activation, and the production gaps that still require operator review."
     >
       <section>
-        <h2>1. Demo status</h2>
+        <h2>1. MVP status</h2>
         <p>
-          VidMetrics Competitor Pulse is currently presented as an MVP demo environment. The
-          checkout flow is mocked, activation is simulated, and no real billing or seat
-          provisioning occurs in the current deployment.
+          VidMetrics Competitor Pulse is currently presented as a business-to-business MVP. The
+          product requires sign-in, routes paid workflows through Stripe sandbox Checkout, and
+          unlocks account features only after webhook-confirmed billing state. This environment is
+          still for evaluation and not yet a finalized production service.
         </p>
       </section>
 
@@ -37,7 +38,7 @@ export default function TermsPage() {
         <ul>
           <li>Use the service only for lawful research, benchmarking, and internal planning.</li>
           <li>Do not attempt to bypass request limits, abuse third-party APIs, or scrape protected data.</li>
-          <li>Do not rely on the MVP for financial, legal, or regulatory decision-making.</li>
+          <li>Do not rely on the MVP for financial, legal, tax, accessibility, or regulatory decision-making.</li>
           <li>Do not misrepresent public competitor data as private or platform-certified analytics.</li>
         </ul>
       </section>
@@ -55,16 +56,26 @@ export default function TermsPage() {
       </section>
 
       <section>
-        <h2>5. No production warranty in this deployment</h2>
+        <h2>5. Billing and activation limits</h2>
         <p>
-          The current demo is provided on an as-is basis for evaluation. The operator should add
-          final warranty disclaimers, limitation of liability language, and governing law clauses
-          before production launch.
+          The current deployment uses Stripe sandbox only. Subscription checkout, invoices, and
+          webhook processing are wired for MVP review, but customer portal flows, tax/VAT handling,
+          refund policy, production-grade seat assignment, and finalized commercial terms still need
+          operator review before launch.
         </p>
       </section>
 
       <section>
-        <h2>6. Changes and suspension</h2>
+        <h2>6. No production warranty in this deployment</h2>
+        <p>
+          The current MVP is provided on an as-is basis for evaluation. The operator should add
+          final warranty disclaimers, limitation of liability language, governing law clauses, and
+          cancellation/refund terms before production launch.
+        </p>
+      </section>
+
+      <section>
+        <h2>7. Changes and suspension</h2>
         <p>
           The operator may modify or suspend the MVP at any time while the product remains in demo
           or pre-production form.
@@ -72,7 +83,7 @@ export default function TermsPage() {
       </section>
 
       <section>
-        <h2>7. Contact and operator details</h2>
+        <h2>8. Contact and operator details</h2>
         <p>
           Replace this placeholder before production launch: `[Legal entity name]`, `[registered
           address]`, `[support email]`, `[registration number / VAT if required]`.

@@ -16,16 +16,16 @@ export function SavedSnapshotsPanel({
 }) {
   return (
     <section
-      id="saved-reports"
+      id="session-snapshots"
       className="rounded-4xl border border-(--color-border) bg-white/90 p-6 shadow-[0_18px_50px_rgba(31,35,33,0.07)]"
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.2em] text-(--color-muted)">
-            Saved snapshots
+            Free workflow
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-tight text-(--color-foreground)">
-            Current session
+            Current session snapshots
           </h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-(--color-muted)">
             Snapshot saves stay scoped to this browser session so your demo starts clean. They
@@ -64,7 +64,7 @@ export function SavedSnapshotsPanel({
         </div>
       ) : snapshots.length === 0 ? (
         <div className="mt-6 rounded-3xl border border-dashed border-(--color-border) bg-[rgba(255,252,246,0.72)] p-5 text-sm leading-6 text-(--color-muted)">
-          Save an analysis snapshot to keep a quick reference list for the current demo session.
+          Save a browser-session snapshot to keep a quick reference list during the current demo.
         </div>
       ) : (
         <div className="mt-6 grid gap-4 lg:grid-cols-2">
@@ -126,7 +126,7 @@ export function SavedSnapshotsPanel({
                       href={snapshot.channel.channelUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="font-medium text-(--color-accent) transition hover:opacity-80"
+                      className="font-medium text-(--color-accent) underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-3 transition hover:opacity-80"
                     >
                       Open channel
                     </a>

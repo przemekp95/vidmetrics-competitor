@@ -1,12 +1,12 @@
-import type { CheckoutIntent } from "@/domain/commercial-upgrade/checkout-intent";
 import type { UpgradeCheckoutReadModel } from "@/application/read-models/upgrade-checkout-read-model";
+import type { CommercialAccount } from "@/domain/commercial-upgrade/commercial-account";
 
 export function toUpgradeCheckoutReadModel(
-  checkoutIntent: CheckoutIntent | null,
+  account: CommercialAccount | null,
 ): UpgradeCheckoutReadModel | null {
-  if (!checkoutIntent) {
+  if (!account) {
     return null;
   }
 
-  return checkoutIntent.toSummary();
+  return account.toSummary();
 }

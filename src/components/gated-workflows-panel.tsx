@@ -1,20 +1,25 @@
+import Link from "next/link";
 import { CalendarRange, ChevronRight, FolderKanban, Layers3, Lock, ShieldCheck } from "lucide-react";
-
-import type { UpgradeCheckoutReadModel } from "@/application/read-models/upgrade-checkout-read-model";
 
 type WorkflowCard = {
   id: string;
   title: string;
   description: string;
   detail: string;
+  href: string;
   icon: React.ReactNode;
+  isEnabled: boolean;
 };
 
 export function GatedWorkflowsPanel({
-  checkout,
+  canUseSavedReports,
+  canUseWeeklyTracking,
+  canUseBenchmarks,
   onOpenCheckout,
 }: {
-  checkout: UpgradeCheckoutReadModel | null;
+  canUseSavedReports: boolean;
+  canUseWeeklyTracking: boolean;
+  canUseBenchmarks: boolean;
   onOpenCheckout: () => void;
 }) {
   const cards: WorkflowCard[] = [
@@ -22,26 +27,31 @@ export function GatedWorkflowsPanel({
       id: "durable-reports",
       title: "Saved Reports",
       description: "Persist client-ready reports beyond the current browser session.",
-      detail: "Promote snapshots into durable analyst assets with owners, context, and handoff-ready exports.",
+      detail: "Durable account storage replaces temporary browser-session snapshots after billing activation.",
+      href: "/reports",
       icon: <FolderKanban className="h-5 w-5" />,
+      isEnabled: canUseSavedReports,
     },
     {
       id: "weekly-tracking",
       title: "Weekly Tracking",
-      description: "Track competitor momentum on a recurring cadence.",
-      detail: "Pin channels for Monday refreshes, spot breakout uploads faster, and route updates into account review rituals.",
+      description: "Pin competitor channels and refresh them manually from the current workspace.",
+      detail: "No cron automation yet. The MVP saves tracked channels and refreshes them on demand.",
+      href: "/tracking",
       icon: <CalendarRange className="h-5 w-5" />,
+      isEnabled: canUseWeeklyTracking,
     },
     {
       id: "benchmarks",
       title: "Multi-channel Benchmarks",
-      description: "Compare multiple creators inside a single commercial workflow.",
-      detail: "Benchmark share of attention, publishing cadence, and engagement efficiency across a competitive set.",
+      description: "Compare up to three tracked channels or saved reports side by side.",
+      detail: "The MVP benchmarks current summary metrics only, not historical time series.",
+      href: "/benchmarks",
       icon: <Layers3 className="h-5 w-5" />,
+      isEnabled: canUseBenchmarks,
     },
   ];
-
-  const isActivationPending = checkout?.status === "submitted";
+  const hasAnyPaidAccess = cards.some((card) => card.isEnabled);
 
   return (
     <section className="rounded-[32px] border border-[color:var(--color-border)] bg-white/90 p-6 shadow-[0_18px_50px_rgba(31,35,33,0.07)]">
@@ -51,21 +61,21 @@ export function GatedWorkflowsPanel({
             Product workflow
           </p>
           <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[color:var(--color-foreground)]">
-            Expand the demo beyond one-off analysis.
+            Expand the analyzer into a paid workspace.
           </h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-[color:var(--color-muted)]">
-            These surfaces sell the next step of the product: saved reports, recurring tracking,
-            and account-level benchmarking powered by a checkout-style activation flow.
+            Paid surfaces stay locked until Stripe sandbox checkout reaches webhook-confirmed
+            activation.
           </p>
         </div>
 
         <button
           type="button"
           onClick={onOpenCheckout}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-[color:var(--color-border)] bg-[rgba(255,252,246,0.92)] px-5 text-sm font-semibold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)]"
+          className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-5 text-sm font-semibold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)]"
         >
-          {isActivationPending ? <ShieldCheck className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
-          {isActivationPending ? "View pending order" : "Upgrade to unlock"}
+          {hasAnyPaidAccess ? <ShieldCheck className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+          {hasAnyPaidAccess ? "View billing state" : "Upgrade to unlock"}
         </button>
       </div>
 
@@ -82,12 +92,12 @@ export function GatedWorkflowsPanel({
               </div>
               <span
                 className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
-                  isActivationPending
+                  card.isEnabled
                     ? "bg-[rgba(16,120,105,0.12)] text-[color:var(--color-accent)]"
                     : "bg-[rgba(31,35,33,0.08)] text-[color:var(--color-foreground-soft)]"
                 }`}
               >
-                {isActivationPending ? "Activation pending" : "Locked"}
+                {card.isEnabled ? "Unlocked" : "Locked"}
               </span>
             </div>
 
@@ -101,14 +111,24 @@ export function GatedWorkflowsPanel({
               {card.detail}
             </p>
 
-            <button
-              type="button"
-              onClick={onOpenCheckout}
-              className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--color-accent)] transition hover:opacity-80"
-            >
-              {isActivationPending ? "View billing" : "Upgrade workflow"}
-              <ChevronRight className="h-4 w-4" />
-            </button>
+            {card.isEnabled ? (
+              <Link
+                href={card.href}
+                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--color-accent)] underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-3 transition hover:opacity-80"
+              >
+                Open workflow
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenCheckout}
+                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--color-accent)] underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-3 transition hover:opacity-80"
+              >
+                Upgrade workflow
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            )}
           </article>
         ))}
       </div>

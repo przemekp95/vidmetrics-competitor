@@ -30,6 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .next-start.log
+.next-start-*.log
+.next-start-*.err.log
+.notion-login*
 root.html
 output/
 
@@ -45,3 +48,6 @@ output/
 next-env.d.ts
 
 .vercel
+
+# clerk configuration (can include secrets)
+/.clerk/

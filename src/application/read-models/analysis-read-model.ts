@@ -65,9 +65,27 @@ export type AnalysisSnapshotReadModel = {
     label: string;
     monthKey: string;
   };
+  summary: ChannelAnalysisReadModel["summary"];
   topPerformer: {
     title: string;
     viewsPerDay: number;
     videoUrl: string;
   } | null;
+};
+
+export type TrackedChannelReadModel = {
+  trackedChannelId: string;
+  createdAt: string;
+  refreshedAt: string;
+  channel: {
+    id: string;
+    title: string;
+    channelUrl: string;
+    avatarUrl: string;
+  };
+  window: {
+    label: string;
+    monthKey: string;
+  };
+  summary: ChannelAnalysisReadModel["summary"];
 };

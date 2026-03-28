@@ -88,6 +88,16 @@ describe("channel analysis read model mappers", () => {
         label: "March 2026",
         monthKey: "2026-03",
       },
+      summary: {
+        uploadCount: 1,
+        averageViewsPerDay: 60000,
+        averageEngagementRate: 0.0513,
+        topPerformer: {
+          title: "Breaking Format Explained",
+          viewsPerDay: 60000,
+          videoUrl: "https://www.youtube.com/watch?v=velocity-1",
+        },
+      },
       topPerformer: {
         title: "Breaking Format Explained",
         viewsPerDay: 60000,

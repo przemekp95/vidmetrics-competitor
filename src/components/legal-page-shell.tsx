@@ -42,8 +42,9 @@ export function LegalPageShell({
         </p>
         <p className="mt-3">
           This deployment includes placeholder legal copy for MVP review. Replace operator details,
-          retention periods, lawful basis wording, and jurisdiction-specific clauses before any
-          production launch. This content is not legal advice.
+          retention periods, lawful basis wording, accessibility compliance evidence, and
+          jurisdiction-specific clauses before any production launch. This content is not legal
+          advice.
         </p>
       </section>
 
@@ -55,8 +56,9 @@ export function LegalPageShell({
 
       <footer className="flex flex-col gap-3 pb-8 text-sm text-(--color-muted)">
         <p>
-          VidMetrics Competitor Pulse is currently presented as a demo environment with mock
-          activation and non-durable session data.
+          VidMetrics Competitor Pulse is currently presented as a signed-in B2B MVP with Stripe
+          sandbox billing, webhook-gated activation, and unfinished production legal/compliance
+          details.
         </p>
         <LegalLinks linkClassName="font-medium text-(--color-foreground)" />
       </footer>

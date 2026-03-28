@@ -12,14 +12,14 @@ export default function PrivacyPage() {
     <LegalPageShell
       eyebrow="Privacy"
       title="Privacy Policy"
-      summary="This policy explains the categories of data the MVP may process, why the data is used, and what still needs to be finalized before a real launch."
+      summary="This policy explains the categories of data processed in the signed-in MVP, why the data is used, and which production privacy decisions still need to be finalized."
     >
       <section>
         <h2>1. Scope</h2>
         <p>
-          This page is a template privacy notice for the current MVP deployment of VidMetrics
-          Competitor Pulse. It should be reviewed and completed with final operator details before
-          a production launch.
+          This page is a template privacy notice for the current signed-in MVP deployment of
+          VidMetrics Competitor Pulse. It should be reviewed and completed with final operator
+          details, retention periods, and processor disclosures before a production launch.
         </p>
       </section>
 
@@ -28,11 +28,19 @@ export default function PrivacyPage() {
         <ul>
           <li>Public YouTube channel URLs pasted into the workspace.</li>
           <li>
-            Browser-session identifiers used to scope temporary snapshots and mock checkout state.
+            Clerk account identifiers and basic profile details such as user id, primary email, and
+            display name.
           </li>
           <li>
-            Mock checkout data entered by the user, including buyer name, buyer email, and company
-            name.
+            Stripe sandbox billing identifiers such as customer ids, subscription ids, checkout
+            session ids, and related webhook event ids.
+          </li>
+          <li>
+            Durable saved reports, tracked channels, and billing status records stored in Postgres
+            for signed-in accounts.
+          </li>
+          <li>
+            Browser-session identifiers used only to scope temporary current-session snapshots.
           </li>
           <li>
             Basic operational logs needed to diagnose errors, abuse, or quota-related incidents.
@@ -44,8 +52,10 @@ export default function PrivacyPage() {
         <h2>3. Why the data is used</h2>
         <ul>
           <li>To analyze public competitor video performance for the active month.</li>
-          <li>To maintain temporary snapshots during the current browser demo session.</li>
-          <li>To simulate an enterprise upgrade flow that ends in pending activation.</li>
+          <li>To authenticate signed-in users and protect account-level routes.</li>
+          <li>To maintain temporary snapshots during the current browser session.</li>
+          <li>To create Stripe sandbox subscription checkouts and reconcile billing state via webhooks.</li>
+          <li>To persist durable reports and tracked channels after paid activation.</li>
           <li>To monitor service reliability, request failures, and operational misuse.</li>
         </ul>
       </section>
@@ -63,10 +73,14 @@ export default function PrivacyPage() {
       <section>
         <h2>5. Retention</h2>
         <ul>
-          <li>Snapshot and mock checkout state are temporary and may be cleared on restart.</li>
+          <li>Current-session snapshots are temporary and may be cleared by the user or on session loss.</li>
           <li>
-            Session identifiers should be retained only as long as needed to run the active
-            browser-session workflow.
+            Account-level billing state, durable reports, and tracked channels currently persist
+            until the operator defines a finalized retention policy.
+          </li>
+          <li>
+            Webhook event ids are stored for idempotency and should be retained only as long as
+            needed to prevent replay side effects.
           </li>
           <li>
             Operational logs should be retained for a short, documented period and reviewed before
@@ -78,9 +92,10 @@ export default function PrivacyPage() {
       <section>
         <h2>6. Sharing and processors</h2>
         <p>
-          The deployed MVP may rely on infrastructure providers and APIs such as Vercel and YouTube
-          Data API v3. A production deployment should publish the final list of processors,
-          international transfer details, and contact channels for data subject requests.
+          The deployed MVP may rely on infrastructure providers and APIs such as Clerk, Stripe,
+          Vercel, the configured Postgres provider, and YouTube Data API v3. A production
+          deployment should publish the final list of processors, international transfer details,
+          subprocessor list, and contact channels for data subject requests.
         </p>
       </section>
 

@@ -52,8 +52,9 @@ export default function CopyrightPage() {
         <h2>4. Reuse and redistribution</h2>
         <p>
           Before production launch, the operator should define what downstream reuse is permitted
-          for exports, screenshots, and generated client reports. If redistribution limits apply,
-          they should be stated here in the final version.
+          for exports, screenshots, generated client reports, and benchmark comparisons saved to
+          durable account storage. If redistribution limits apply, they should be stated here in
+          the final version.
         </p>
       </section>
 

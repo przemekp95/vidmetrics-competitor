@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createConfirmUpgradeCheckoutCommandHandler } from "@/application/commands/confirm-upgrade-checkout-command-handler";
+import { createApplyBillingWebhookCommandHandler } from "@/application/commands/apply-billing-webhook-command-handler";
 import { createStartUpgradeCheckoutCommandHandler } from "@/application/commands/start-upgrade-checkout-command-handler";
+import { createGetCheckoutStateBySessionIdQueryHandler } from "@/application/queries/get-checkout-state-by-session-id-query-handler";
 import { createGetCheckoutStateQueryHandler } from "@/application/queries/get-checkout-state-query-handler";
-import { CheckoutIntent } from "@/domain/commercial-upgrade/checkout-intent";
+import { CommercialAccount } from "@/domain/commercial-upgrade/commercial-account";
 import type { CommercialPlan } from "@/domain/commercial-upgrade/types";
 import { UpgradeCatalogPolicy } from "@/domain/commercial-upgrade/upgrade-catalog-policy";
 import { ApplicationError } from "@/shared/application-error";
@@ -16,11 +17,7 @@ const catalog: CommercialPlan[] = [
     maxSeats: 50,
     monthlyPricePerSeat: 49,
     annualPricePerSeat: 39,
-    includedFeatures: [
-      "Saved reports",
-      "Weekly tracking",
-      "Team sharing",
-    ],
+    includedFeatures: ["Saved reports", "Weekly tracking", "Team sharing"],
   },
   {
     planId: "enterprise",
@@ -29,122 +26,235 @@ const catalog: CommercialPlan[] = [
     maxSeats: 250,
     monthlyPricePerSeat: 99,
     annualPricePerSeat: 79,
-    includedFeatures: [
-      "Multi-channel benchmarks",
-      "Procurement support",
-      "Quarterly strategy reviews",
-    ],
+    includedFeatures: ["Multi-channel benchmarks", "Procurement support", "Quarterly strategy reviews"],
   },
 ];
 
 describe("upgrade checkout handlers", () => {
-  it("creates a session-scoped draft checkout", async () => {
+  it("creates a user-scoped checkout session draft and returns the redirect URL", async () => {
     const repository = {
-      get: vi.fn().mockResolvedValue(null),
+      getByUserId: vi.fn().mockResolvedValue(null),
+      getByStripeCustomerId: vi.fn().mockResolvedValue(null),
+      getByStripeSubscriptionId: vi.fn().mockResolvedValue(null),
+      getByCheckoutSessionId: vi.fn().mockResolvedValue(null),
       save: vi.fn().mockResolvedValue(undefined),
     };
     const provider = {
       getCatalog: vi.fn().mockResolvedValue(catalog),
     };
+    const billingCheckoutGateway = {
+      createSubscriptionCheckout: vi.fn().mockResolvedValue({
+        checkoutSessionId: "cs_test_123",
+        checkoutUrl: "https://checkout.stripe.test/session/123",
+        stripeCustomerId: "cus_123",
+      }),
+    };
     const handle = createStartUpgradeCheckoutCommandHandler({
       repository,
       catalogProvider: provider,
+      billingCheckoutGateway,
     });
 
-    const checkout = await handle({
-      sessionId: "session-a",
+    const result = await handle({
+      userId: "user_123",
+      email: "alex@agency.com",
+      name: "Alex Rivera",
       planId: "team",
       billingCycle: "monthly",
       seats: 7,
+      successUrl: "https://example.com/checkout/return?session_id={CHECKOUT_SESSION_ID}",
+      cancelUrl: "https://example.com/checkout/return?canceled=1",
     });
 
     expect(provider.getCatalog).toHaveBeenCalledTimes(1);
-    expect(repository.save).toHaveBeenCalledWith(
-      "session-a",
-      expect.any(CheckoutIntent),
+    expect(billingCheckoutGateway.createSubscriptionCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user_123",
+        email: "alex@agency.com",
+        selection: expect.anything(),
+      }),
     );
-    expect(checkout.toSummary()).toMatchObject({
-      status: "draft",
+    expect(repository.save).toHaveBeenCalledWith(expect.any(CommercialAccount));
+    expect(result.checkoutUrl).toBe("https://checkout.stripe.test/session/123");
+    expect(result.account.toSummary()).toMatchObject({
+      status: "checkout_pending",
       planId: "team",
       seats: 7,
+      stripeCustomerId: "cus_123",
+      checkoutSessionId: "cs_test_123",
     });
   });
 
-  it("confirms an existing session checkout and returns submitted state", async () => {
+  it("applies Stripe lifecycle events idempotently and unlocks entitlements only after invoice paid", async () => {
     const selection = new UpgradeCatalogPolicy(catalog).createSelection({
       planId: "enterprise",
       billingCycle: "annual",
       seats: 24,
     });
     const repository = {
-      get: vi.fn().mockResolvedValue(CheckoutIntent.start(selection)),
+      getByUserId: vi.fn().mockResolvedValue(
+        CommercialAccount.create("user_123").beginCheckout({
+          selection,
+          stripeCustomerId: "cus_123",
+          checkoutSessionId: "cs_test_123",
+        }),
+      ),
+      getByStripeCustomerId: vi.fn().mockResolvedValue(
+        CommercialAccount.create("user_123").beginCheckout({
+          selection,
+          stripeCustomerId: "cus_123",
+          checkoutSessionId: "cs_test_123",
+        }),
+      ),
+      getByStripeSubscriptionId: vi.fn().mockResolvedValue(null),
+      getByCheckoutSessionId: vi.fn().mockResolvedValue(null),
       save: vi.fn().mockResolvedValue(undefined),
     };
-    const handle = createConfirmUpgradeCheckoutCommandHandler({
+    const processedEventRepository = {
+      hasProcessed: vi
+        .fn()
+        .mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false),
+      markProcessed: vi.fn().mockResolvedValue(undefined),
+    };
+    const handle = createApplyBillingWebhookCommandHandler({
       repository,
-      now: () => new Date("2026-03-28T18:00:00.000Z"),
-      createConfirmationCode: () => "VM-20260328-0001",
+      processedEventRepository,
     });
 
-    const checkout = await handle({
-      sessionId: "session-a",
-      buyerName: "Alex Rivera",
-      buyerEmail: "alex@agency.com",
-      companyName: "Northwind Media",
+    const checkoutCompleted = await handle({
+      event: {
+        type: "checkout_session_completed",
+        eventId: "evt_checkout",
+        userId: "user_123",
+        stripeCustomerId: "cus_123",
+        stripeSubscriptionId: "sub_123",
+        checkoutSessionId: "cs_test_123",
+        occurredAt: "2026-03-28T18:00:00.000Z",
+      },
     });
-
-    expect(repository.get).toHaveBeenCalledWith("session-a");
-    expect(repository.save).toHaveBeenCalledWith(
-      "session-a",
-      expect.any(CheckoutIntent),
-    );
-    expect(checkout.toSummary()).toMatchObject({
-      status: "submitted",
-      confirmationCode: "VM-20260328-0001",
-      companyName: "Northwind Media",
+    const duplicate = await handle({
+      event: {
+        type: "checkout_session_completed",
+        eventId: "evt_checkout",
+        userId: "user_123",
+        stripeCustomerId: "cus_123",
+        stripeSubscriptionId: "sub_123",
+        checkoutSessionId: "cs_test_123",
+        occurredAt: "2026-03-28T18:00:00.000Z",
+      },
     });
-  });
-
-  it("rejects checkout confirmation when there is no draft for the session", async () => {
-    const handle = createConfirmUpgradeCheckoutCommandHandler({
-      repository: {
-        get: vi.fn().mockResolvedValue(null),
-        save: vi.fn().mockResolvedValue(undefined),
+    await handle({
+      event: {
+        type: "invoice_paid",
+        eventId: "evt_paid",
+        stripeCustomerId: "cus_123",
+        stripeSubscriptionId: "sub_123",
+        occurredAt: "2026-03-28T18:01:00.000Z",
       },
     });
 
-    try {
-      await handle({
-        sessionId: "missing-session",
-        buyerName: "Alex Rivera",
-        buyerEmail: "alex@agency.com",
-        companyName: "Northwind Media",
-      });
-      throw new Error("expected confirmation to fail");
-    } catch (error) {
-      expect(error).toBeInstanceOf(ApplicationError);
-      expect((error as ApplicationError).code).toBe("CHECKOUT_NOT_FOUND");
-    }
+    expect(checkoutCompleted).toEqual({ applied: true });
+    expect(duplicate).toEqual({ applied: false });
+    expect(repository.save).toHaveBeenCalledTimes(2);
+    expect(repository.save).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        toSummary: expect.any(Function),
+      }),
+    );
+    expect(processedEventRepository.markProcessed).toHaveBeenCalledWith("evt_paid");
   });
 
-  it("returns only the current session checkout from the query handler", async () => {
+  it("rejects lifecycle events when no commercial account matches the webhook payload", async () => {
+    const handle = createApplyBillingWebhookCommandHandler({
+      repository: {
+        getByUserId: vi.fn().mockResolvedValue(null),
+        getByStripeCustomerId: vi.fn().mockResolvedValue(null),
+        getByStripeSubscriptionId: vi.fn().mockResolvedValue(null),
+        getByCheckoutSessionId: vi.fn().mockResolvedValue(null),
+        save: vi.fn().mockResolvedValue(undefined),
+      },
+      processedEventRepository: {
+        hasProcessed: vi.fn().mockResolvedValue(false),
+        markProcessed: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+
+    await expect(
+      handle({
+        event: {
+          type: "invoice_paid",
+          eventId: "evt_paid",
+          stripeCustomerId: "cus_missing",
+          stripeSubscriptionId: "sub_missing",
+          occurredAt: "2026-03-28T18:01:00.000Z",
+        },
+      }),
+    ).rejects.toBeInstanceOf(ApplicationError);
+  });
+
+  it("returns only the current user's commercial account from the query handler", async () => {
     const selection = new UpgradeCatalogPolicy(catalog).createSelection({
       planId: "team",
       billingCycle: "monthly",
       seats: 8,
     });
     const repository = {
-      get: vi.fn().mockResolvedValue(CheckoutIntent.start(selection)),
+      getByUserId: vi.fn().mockResolvedValue(
+        CommercialAccount.create("user_123").beginCheckout({
+          selection,
+          stripeCustomerId: "cus_123",
+          checkoutSessionId: "cs_test_123",
+        }),
+      ),
+      getByStripeCustomerId: vi.fn().mockResolvedValue(null),
+      getByStripeSubscriptionId: vi.fn().mockResolvedValue(null),
+      getByCheckoutSessionId: vi.fn().mockResolvedValue(null),
       save: vi.fn().mockResolvedValue(undefined),
     };
     const handle = createGetCheckoutStateQueryHandler({ repository });
 
-    const checkout = await handle({ sessionId: "session-b" });
+    const account = await handle({ userId: "user_123" });
 
-    expect(repository.get).toHaveBeenCalledWith("session-b");
-    expect(checkout?.toSummary()).toMatchObject({
+    expect(repository.getByUserId).toHaveBeenCalledWith("user_123");
+    expect(account?.toSummary()).toMatchObject({
       planId: "team",
       seats: 8,
+      status: "checkout_pending",
+    });
+  });
+
+  it("returns checkout state by Stripe checkout session id for the public return flow", async () => {
+    const selection = new UpgradeCatalogPolicy(catalog).createSelection({
+      planId: "enterprise",
+      billingCycle: "monthly",
+      seats: 24,
+    });
+    const repository = {
+      getByUserId: vi.fn().mockResolvedValue(null),
+      getByStripeCustomerId: vi.fn().mockResolvedValue(null),
+      getByStripeSubscriptionId: vi.fn().mockResolvedValue(null),
+      getByCheckoutSessionId: vi.fn().mockResolvedValue(
+        CommercialAccount.create("user_123").beginCheckout({
+          selection,
+          stripeCustomerId: "cus_123",
+          checkoutSessionId: "cs_test_public_123",
+        }),
+      ),
+      save: vi.fn().mockResolvedValue(undefined),
+    };
+    const handle = createGetCheckoutStateBySessionIdQueryHandler({ repository });
+
+    const account = await handle({ checkoutSessionId: "cs_test_public_123" });
+
+    expect(repository.getByCheckoutSessionId).toHaveBeenCalledWith("cs_test_public_123");
+    expect(account?.toSummary()).toMatchObject({
+      planId: "enterprise",
+      seats: 24,
+      status: "checkout_pending",
+      checkoutSessionId: "cs_test_public_123",
     });
   });
 });

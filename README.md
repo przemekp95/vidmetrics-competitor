@@ -1,51 +1,66 @@
 # VidMetrics Competitor Pulse
 
-VidMetrics Competitor Pulse is a Next.js 16 MVP for competitor YouTube analysis. An analyst can
-paste a public channel URL, inspect current-month uploads ranked by momentum, filter the shortlist,
-export CSV, save temporary snapshots for the current browser demo session, and walk a mock
-enterprise checkout flow that ends in `Pending activation`.
+VidMetrics Competitor Pulse is a Next.js 16 B2B MVP for competitor YouTube analysis. Users sign in
+to access the main workspace on `/`, analyze a public channel, filter and export the current-month
+shortlist, save temporary current-session snapshots, and upgrade through Stripe-hosted sandbox
+Checkout. Paid workflows unlock only after Stripe webhooks confirm subscription billing. The Stripe
+return page is intentionally public so post-checkout billing state can resolve by `session_id`
+without depending on an immediate Clerk re-sync after cross-origin navigation.
 
 Live URL: `https://vidmetrics-competitor.vercel.app`
 
-## Features
+## MVP Surface
 
-- `POST /api/analyze` returns the existing analysis payload for a YouTube channel URL.
-- `POST /api/analysis-snapshots` saves a temporary browser-session snapshot.
-- `GET /api/analysis-snapshots` lists snapshots for the active browser session.
-- `DELETE /api/analysis-snapshots` clears snapshots for the active browser session.
-- `GET /api/upgrade-checkout` returns mock checkout state for the active browser session.
-- `POST /api/upgrade-checkout/start` creates or overwrites a session-scoped draft checkout.
-- `POST /api/upgrade-checkout/confirm` submits the mock checkout and returns pending activation.
-- Responsive dashboard with summary cards, momentum chart, sortable table, filters, and CSV export.
-- SaaS shell with plan badge, workspace navigation, gated workflow cards, and checkout drawer.
-- Static legal surfaces for `Terms`, `Privacy`, `Copyright`, and `Legal Notice`.
+Free, signed-in workspace on `/`:
+
+- analyze one public YouTube channel at a time
+- filter and sort the current-month shortlist
+- export filtered CSV
+- save temporary current-session snapshots scoped to the active browser session
+
+Paid, account-level workflows after webhook-confirmed billing:
+
+- `Saved Reports`: durable report library in Postgres
+- `Weekly Tracking`: pin channels and refresh them manually from the workspace
+- `Multi-channel Benchmarks`: compare up to three saved reports or tracked channels
 
 ## Architecture
 
-The app now uses a small CQRS split without external persistence:
+The repo uses a pragmatic DDD and CQRS split:
 
-- Query side: analyze competitor channel, list current-session snapshots, get upgrade checkout state.
-- Command side: save analysis snapshot, clear current-session snapshots, start checkout, confirm checkout.
-- Domain: velocity, trend, ranking, and summary calculations.
-- Commercial upgrade bounded context: OOP-first aggregate and value objects for checkout.
-- Read models: transport/UI payloads are mapped outside the domain.
-- Infrastructure: YouTube Data API adapter, session-scoped in-memory snapshot repository, and
-  in-memory request guard.
+- `analysis` bounded context: ranking, trend, and summary logic for public YouTube data
+- `commercial-upgrade` bounded context: plan selection, billing state, and feature entitlements
+- command side: start checkout, apply Stripe webhook events, save durable reports, save tracked channels
+- query side: analysis results, checkout state, saved reports, tracked channels
+- ports/adapters boundary: Clerk auth, Stripe billing, YouTube API, and Postgres stay outside the domain
 
-This is intentionally a pragmatic DDD slice, not a heavy enterprise rewrite. The domain is kept free
-of presentation-only fields such as `videoUrl`, `durationText`, and month labels.
+This is intentionally not a heavy enterprise rewrite. The domain keeps business rules, while
+transport and infrastructure stay thin.
 
-## TDD Notes
+## Auth And Route Behavior
 
-The refactor and hardening pass in this repo was implemented test-first for the new behavior:
+- `/` is a protected workspace route; signed-out document requests are redirected to Clerk sign-in
+- `/reports`, `/tracking`, `/benchmarks`, and paid APIs are protected
+- `/checkout/return` and `/api/checkout-return-state` are public on purpose so Stripe can return to
+  the app without depending on a fresh Clerk browser handshake
+- public checkout return status still does not unlock features by itself; entitlements remain
+  webhook-gated and server-enforced
 
-- rate limiting and client-safe errors
-- query and command handlers
-- read-model mapping
-- snapshot transport routes
+## Billing Model
 
-The older MVP history in git is not detailed enough to prove a full historical red-green workflow
-for the original greenfield implementation.
+The MVP is `B2B only`.
+
+- Auth: Clerk
+- Checkout: Stripe-hosted Checkout Sessions in sandbox
+- Billing mode: subscriptions with seat quantity
+- Activation: Stripe webhook gated, not redirect gated
+- Persistence: Postgres
+
+This means a real Clerk app and one Postgres database are required even for a truthful local end to
+end smoke.
+
+Default sandbox prices are already wired in code for the connected Stripe sandbox account. Override
+them with env vars if you want to use a different Stripe account.
 
 ## Local Setup
 
@@ -54,22 +69,38 @@ Requirements:
 - Node.js 22 LTS or newer
 - npm
 - YouTube Data API v3 key
-- Vercel account for deployment
+- Clerk application
+- Stripe sandbox account
+- Postgres database
 
-Install and run:
+Install:
 
 ```bash
 npm install
 copy .env.example .env.local
 ```
 
-Set:
+Fill `.env.local`:
 
 ```bash
-YOUTUBE_API_KEY=your_key_here
+YOUTUBE_API_KEY=your_youtube_data_api_key_here
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...
+DATABASE_URL=postgres://...
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
-Then:
+Optional Stripe price overrides:
+
+```bash
+STRIPE_TEAM_MONTHLY_PRICE_ID=price_...
+STRIPE_TEAM_ANNUAL_PRICE_ID=price_...
+STRIPE_ENTERPRISE_MONTHLY_PRICE_ID=price_...
+STRIPE_ENTERPRISE_ANNUAL_PRICE_ID=price_...
+```
+
+Run the app:
 
 ```bash
 npm run dev
@@ -77,7 +108,45 @@ npm run dev
 
 Open `http://localhost:3000`.
 
-Useful checks:
+Forward Stripe webhooks in another terminal:
+
+```bash
+stripe listen --forward-to http://localhost:3000/api/stripe/webhook
+```
+
+Copy the emitted signing secret into `STRIPE_WEBHOOK_SECRET`.
+
+## Stripe Sandbox Catalog
+
+The current sandbox catalog matches the domain catalog:
+
+- `Team Pulse`
+  - monthly: `$49 / seat / month`
+  - annual: `$39 / seat / month`, billed yearly
+- `Enterprise Benchmarking`
+  - monthly: `$99 / seat / month`
+  - annual: `$79 / seat / month`, billed yearly
+
+Default fallback Stripe price ids in this repo:
+
+- `price_1TG2wuA0RuhjBcddsSXJYpWn` team monthly
+- `price_1TG2wvA0RuhjBcddkRyXC5ef` team annual
+- `price_1TG2wwA0RuhjBcddhIefAcTT` enterprise monthly
+- `price_1TG2wyA0RuhjBcddUlzikinv` enterprise annual
+
+## Persistence
+
+Commercial MVP tables are auto-created on first Postgres access:
+
+- `commercial_accounts`
+- `saved_reports`
+- `tracked_channels`
+- `processed_webhook_events`
+
+This repo does not yet use a dedicated migration framework. That is documented as production
+follow-up in [docs/production-readiness.md](docs/production-readiness.md).
+
+## Useful Checks
 
 ```bash
 npm run lint
@@ -86,63 +155,55 @@ npm run test:run
 npm run build
 ```
 
-## Deploy Notes
-
-The production project is linked to Vercel. `YOUTUBE_API_KEY` must exist in runtime env for the app
-to work outside local development.
-
-Example CLI flow:
-
-```bash
-npx vercel env add YOUTUBE_API_KEY production --value "your_key_here" --yes
-npx vercel --prod --yes
-```
-
 ## Smoke Checklist
 
-- homepage renders on desktop
-- homepage renders on mobile
+- visit `/` and confirm signed-out users are redirected to Clerk sign-in
+- sign in or sign up
 - analyze `https://www.youtube.com/@MKBHD`
-- sort and filter work after analysis
-- CSV export downloads
-- save snapshot works
-- saved snapshots list renders
-- clear session works
-- open pricing drawer
-- start mock checkout draft
-- submit checkout and verify `Pending activation`
+- filter and sort the shortlist
+- export CSV
+- save a current-session snapshot
+- confirm durable reports, weekly tracking, and benchmarks stay locked pre-checkout
+- open the pricing drawer and start Stripe sandbox checkout
+- complete checkout with a Stripe test card
+- confirm the app returns to `/checkout/return?session_id=...`
+- confirm the return page resolves billing state without requiring a second sign-in
+- confirm webhook delivery changes billing state and unlocks paid workflows
 
-## Repository Notes
+## Legal And Accessibility
 
-- Public competitor data only: watch time, CTR, retention, and impressions are not available.
-- Each analysis request is capped at `100` public uploads from the active month for the selected
-  channel. This keeps API usage and response times predictable for the MVP demo.
-- Snapshot persistence is intentionally non-durable and scoped to the active browser session.
-- Checkout state is intentionally non-durable and scoped to the active browser session.
-- The request guard adds per-process rate limiting and in-flight request deduplication.
+The repo includes placeholder pages for:
 
-## Security And Production Readiness
+- `Terms`
+- `Privacy`
+- `Accessibility`
+- `Copyright`
+- `Legal Notice`
 
-This repo is hardened enough for a live MVP demo, but it is not a production-grade public backend
-yet.
+These pages describe the current B2B MVP shape, but they still require operator details, retention
+rules, and production legal review before launch.
 
-- `POST /api/analyze` is still a public, quota-consuming endpoint. The current guard is
-  per-process in-memory only, so it is not a durable or globally enforced rate limit.
-- `analysis-snapshots` and `upgrade-checkout` use a browser-session identifier, not real auth or
-  authorization. That is acceptable for a scoped demo, not for a real multi-user product.
-- Write endpoints outside `/api/analyze` do not yet have stronger abuse controls beyond request
-  validation.
-- Browser hardening headers such as a stricter CSP baseline, frame protection, and `nosniff` still
-  need to be added before calling the app production-ready.
-- The legal pages included in this repo are MVP placeholders and still require operator details and
-  legal review before launch.
+## TDD Notes
 
-Recommended production upgrades:
+This implementation includes fresh regression coverage for:
 
-- move rate limiting to a shared durable layer
-- introduce server-managed or signed sessions, then real auth when the product needs it
-- add security headers and origin-aware request protections
-- treat the current API posture as `demo-safe`, not `public-backend-safe`
+- checkout drawer keyboard/focus behavior
+- checkout route auth/origin/webhook handling
+- Stripe price resolution and checkout session mapping
+- billing state transitions and idempotent webhook replay
+- paid workflow entitlement gates
+
+The current turn includes real red-green evidence for the drawer regression fix. The broader Stripe
+and paid workflow refactor was continued from an in-progress branch, so strict historical TDD
+cannot be honestly claimed for every file touched in the branch.
+
+## Production Follow-Up
+
+See [docs/production-readiness.md](docs/production-readiness.md) for:
+
+- what is in MVP now
+- what still needs to happen before production
+- which business, legal, and operational decisions remain open
 
 ## Authors
 
