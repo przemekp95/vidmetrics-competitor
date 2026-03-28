@@ -1,9 +1,9 @@
 import type {
   AnalysisFrame,
   AnalysisWindow,
-  ChannelAnalysisResponse,
-  CompetitorVideo,
-  TrendLabel,
+  ChannelAnalysis,
+  Trend,
+  VideoPerformance,
 } from "@/domain/analysis/types";
 import type { SourceChannelSnapshot } from "@/ports/competitor-channel-source";
 
@@ -19,14 +19,6 @@ function formatMonthKey(date: Date) {
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
-function formatWindowLabel(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  }).format(date);
-}
-
 function parseIsoDurationToSeconds(duration: string) {
   const match = /^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/u.exec(duration);
 
@@ -39,19 +31,6 @@ function parseIsoDurationToSeconds(duration: string) {
   const seconds = Number(match[3] ?? 0);
 
   return hours * 3600 + minutes * 60 + seconds;
-}
-
-function formatDurationText(duration: string) {
-  const totalSeconds = parseIsoDurationToSeconds(duration);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  if (hours > 0) {
-    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }
-
-  return `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 function calculateMedian(values: number[]) {
@@ -69,7 +48,7 @@ function calculateMedian(values: number[]) {
   return sorted[middle];
 }
 
-function toTrendLabel(viewsPerDay: number, medianViewsPerDay: number): TrendLabel {
+function toTrendLabel(viewsPerDay: number, medianViewsPerDay: number): Trend {
   if (medianViewsPerDay <= 0) {
     return "steady";
   }
@@ -85,22 +64,20 @@ function toTrendLabel(viewsPerDay: number, medianViewsPerDay: number): TrendLabe
   return "steady";
 }
 
-function toPublicWindow(frame: AnalysisFrame): AnalysisWindow {
+function toAnalysisWindow(frame: AnalysisFrame): AnalysisWindow {
   return {
-    label: frame.label,
     monthKey: frame.monthKey,
     startAt: frame.startAt,
     endAt: frame.endAt,
   };
 }
 
-export function createAnalysisWindow(now: Date): AnalysisFrame {
+export function createAnalysisFrame(now: Date): AnalysisFrame {
   const normalizedNow = new Date(now);
   const monthStart = startOfMonthUtc(normalizedNow);
   const monthEnd = startOfNextMonthUtc(normalizedNow);
 
   return {
-    label: formatWindowLabel(normalizedNow),
     monthKey: formatMonthKey(normalizedNow),
     startAt: monthStart.toISOString(),
     endAt: monthEnd.toISOString(),
@@ -108,10 +85,58 @@ export function createAnalysisWindow(now: Date): AnalysisFrame {
   };
 }
 
+export function createChannelAnalysis(input: {
+  channel: ChannelAnalysis["channel"];
+  window: AnalysisWindow;
+  source: ChannelAnalysis["source"];
+  videos: Array<Omit<VideoPerformance, "trend">>;
+}): ChannelAnalysis {
+  const medianViewsPerDay = calculateMedian(input.videos.map((video) => video.viewsPerDay));
+
+  const videos: VideoPerformance[] = input.videos
+    .map((video) => ({
+      ...video,
+      trend: toTrendLabel(video.viewsPerDay, medianViewsPerDay),
+    }))
+    .sort((left, right) => right.viewsPerDay - left.viewsPerDay);
+
+  const averageViewsPerDay =
+    videos.length > 0
+      ? Math.round(videos.reduce((total, video) => total + video.viewsPerDay, 0) / videos.length)
+      : 0;
+  const averageEngagementRate =
+    videos.length > 0
+      ? Number(
+          (
+            videos.reduce((total, video) => total + video.engagementRate, 0) / videos.length
+          ).toFixed(4),
+        )
+      : 0;
+
+  return {
+    channel: input.channel,
+    window: input.window,
+    summary: {
+      uploadCount: videos.length,
+      averageViewsPerDay,
+      averageEngagementRate,
+      topPerformer: videos[0]
+        ? {
+            videoId: videos[0].id,
+            title: videos[0].title,
+            viewsPerDay: videos[0].viewsPerDay,
+          }
+        : null,
+    },
+    videos,
+    source: input.source,
+  };
+}
+
 export function buildChannelAnalysis(
   snapshot: SourceChannelSnapshot,
   frame: AnalysisFrame,
-): ChannelAnalysisResponse {
+): ChannelAnalysis {
   const generatedAt = new Date(frame.generatedAt);
   const windowStart = new Date(frame.startAt).getTime();
   const windowEnd = new Date(frame.endAt).getTime();
@@ -133,10 +158,9 @@ export function buildChannelAnalysis(
       return {
         id: video.id,
         title: video.title,
-        videoUrl: `https://www.youtube.com/watch?v=${video.id}`,
         thumbnailUrl: video.thumbnailUrl,
         publishedAt: video.publishedAt,
-        durationText: formatDurationText(video.duration),
+        durationSeconds: parseIsoDurationToSeconds(video.duration),
         views: video.viewCount,
         likes: video.likeCount,
         comments: video.commentCount,
@@ -145,44 +169,10 @@ export function buildChannelAnalysis(
       };
     });
 
-  const medianViewsPerDay = calculateMedian(derivedVideos.map((video) => video.viewsPerDay));
-
-  const videos: CompetitorVideo[] = derivedVideos
-    .map((video) => ({
-      ...video,
-      trend: toTrendLabel(video.viewsPerDay, medianViewsPerDay),
-    }))
-    .sort((left, right) => right.viewsPerDay - left.viewsPerDay);
-
-  const averageViewsPerDay =
-    videos.length > 0
-      ? Math.round(videos.reduce((total, video) => total + video.viewsPerDay, 0) / videos.length)
-      : 0;
-  const averageEngagementRate =
-    videos.length > 0
-      ? Number(
-          (
-            videos.reduce((total, video) => total + video.engagementRate, 0) / videos.length
-          ).toFixed(4),
-        )
-      : 0;
-
-  return {
+  return createChannelAnalysis({
     channel: snapshot.channel,
-    window: toPublicWindow(frame),
-    summary: {
-      uploadCount: videos.length,
-      averageViewsPerDay,
-      averageEngagementRate,
-      topPerformer: videos[0]
-        ? {
-            title: videos[0].title,
-            viewsPerDay: videos[0].viewsPerDay,
-            videoUrl: videos[0].videoUrl,
-          }
-        : null,
-    },
-    videos,
+    window: toAnalysisWindow(frame),
     source: snapshot.source,
-  };
+    videos: derivedVideos,
+  });
 }

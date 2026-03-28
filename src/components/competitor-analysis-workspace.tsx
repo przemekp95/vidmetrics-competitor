@@ -1,13 +1,19 @@
 "use client";
 
-import { startTransition, useDeferredValue, useState } from "react";
-import { ArrowUpRight, Download, LoaderCircle, Search, SlidersHorizontal } from "lucide-react";
+import { startTransition, useDeferredValue, useEffect, useState } from "react";
+import { ArrowUpRight, Download, LoaderCircle, Save, Search, SlidersHorizontal } from "lucide-react";
 import Image from "next/image";
 
+import type {
+  AnalysisSnapshotReadModel,
+  ChannelAnalysisReadModel,
+  CompetitorVideoReadModel,
+  SaveAnalysisSnapshotResponse,
+} from "@/application/read-models/analysis-read-model";
 import { PerformanceSummaryCards } from "@/components/performance-summary-cards";
+import { SavedSnapshotsPanel } from "@/components/saved-snapshots-panel";
 import { VideoMomentumChart } from "@/components/video-momentum-chart";
 import { VideoResults } from "@/components/video-results";
-import type { ChannelAnalysisResponse, CompetitorVideo } from "@/domain/analysis/types";
 import { durationTextToSeconds, formatInteger } from "@/lib/formatters";
 
 const SAMPLE_CHANNELS = [
@@ -15,12 +21,19 @@ const SAMPLE_CHANNELS = [
   "https://www.youtube.com/@WSJ",
   "https://www.youtube.com/@MrBeast",
 ];
+const SNAPSHOT_SESSION_STORAGE_KEY = "vidmetrics:competitor-pulse-session-id";
 
 type SortKey = "momentum" | "views" | "engagement" | "comments" | "recent";
-type TrendFilter = "all" | CompetitorVideo["trend"];
+type TrendFilter = "all" | CompetitorVideoReadModel["trend"];
 type DurationFilter = "all" | "under10" | "10to20" | "20plus";
+type StatusMessage =
+  | {
+      tone: "success" | "error";
+      text: string;
+    }
+  | null;
 
-function sortVideos(videos: CompetitorVideo[], sortKey: SortKey) {
+function sortVideos(videos: CompetitorVideoReadModel[], sortKey: SortKey) {
   return [...videos].sort((left, right) => {
     if (sortKey === "views") {
       return right.views - left.views;
@@ -42,7 +55,7 @@ function sortVideos(videos: CompetitorVideo[], sortKey: SortKey) {
   });
 }
 
-function matchesDurationFilter(video: CompetitorVideo, durationFilter: DurationFilter) {
+function matchesDurationFilter(video: CompetitorVideoReadModel, durationFilter: DurationFilter) {
   const seconds = durationTextToSeconds(video.durationText);
 
   if (durationFilter === "under10") {
@@ -60,7 +73,7 @@ function matchesDurationFilter(video: CompetitorVideo, durationFilter: DurationF
   return true;
 }
 
-function exportVideosToCsv(channelTitle: string, videos: CompetitorVideo[]) {
+function exportVideosToCsv(channelTitle: string, videos: CompetitorVideoReadModel[]) {
   const header = [
     "Title",
     "Published At",
@@ -99,10 +112,16 @@ function exportVideosToCsv(channelTitle: string, videos: CompetitorVideo[]) {
 }
 
 export function CompetitorAnalysisWorkspace() {
+  const [snapshotSessionId, setSnapshotSessionId] = useState<string | null>(null);
   const [channelUrl, setChannelUrl] = useState("");
-  const [analysis, setAnalysis] = useState<ChannelAnalysisResponse | null>(null);
+  const [analysis, setAnalysis] = useState<ChannelAnalysisReadModel | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingSnapshots, setIsLoadingSnapshots] = useState(true);
+  const [isSavingSnapshot, setIsSavingSnapshot] = useState(false);
+  const [isClearingSnapshots, setIsClearingSnapshots] = useState(false);
+  const [savedSnapshots, setSavedSnapshots] = useState<AnalysisSnapshotReadModel[]>([]);
+  const [snapshotMessage, setSnapshotMessage] = useState<StatusMessage>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("momentum");
   const [minViews, setMinViews] = useState("");
@@ -126,6 +145,72 @@ export function CompetitorAnalysisWorkspace() {
 
   const chartVideos = filteredVideos.length > 0 ? filteredVideos : analysis?.videos ?? [];
 
+  useEffect(() => {
+    const existingSessionId = window.sessionStorage.getItem(SNAPSHOT_SESSION_STORAGE_KEY);
+
+    if (existingSessionId) {
+      setSnapshotSessionId(existingSessionId);
+      return;
+    }
+
+    const nextSessionId = crypto.randomUUID();
+    window.sessionStorage.setItem(SNAPSHOT_SESSION_STORAGE_KEY, nextSessionId);
+    setSnapshotSessionId(nextSessionId);
+  }, []);
+
+  async function loadSavedSnapshots(sessionId: string) {
+    setIsLoadingSnapshots(true);
+
+    try {
+      const response = await fetch("/api/analysis-snapshots", {
+        method: "GET",
+        headers: {
+          "x-vidmetrics-session-id": sessionId,
+        },
+      });
+
+      const payload = (await response.json()) as
+        | {
+            snapshots: AnalysisSnapshotReadModel[];
+          }
+        | {
+            error?: {
+              message?: string;
+            };
+          };
+
+      if (!response.ok) {
+        const errorPayload = payload as {
+          error?: {
+            message?: string;
+          };
+        };
+
+        throw new Error(errorPayload.error?.message ?? "Unable to load saved snapshots.");
+      }
+
+      startTransition(() => {
+        setSavedSnapshots((payload as { snapshots: AnalysisSnapshotReadModel[] }).snapshots);
+      });
+    } catch (error) {
+      setSnapshotMessage({
+        tone: "error",
+        text:
+          error instanceof Error ? error.message : "Unable to load saved snapshots right now.",
+      });
+    } finally {
+      setIsLoadingSnapshots(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!snapshotSessionId) {
+      return;
+    }
+
+    void loadSavedSnapshots(snapshotSessionId);
+  }, [snapshotSessionId]);
+
   async function runAnalysis(nextUrl: string) {
     setIsSubmitting(true);
     setErrorMessage(null);
@@ -142,7 +227,7 @@ export function CompetitorAnalysisWorkspace() {
       });
 
       const payload = (await response.json()) as
-        | ChannelAnalysisResponse
+        | ChannelAnalysisReadModel
         | {
             error?: {
               message?: string;
@@ -160,7 +245,7 @@ export function CompetitorAnalysisWorkspace() {
       }
 
       startTransition(() => {
-        setAnalysis(payload as ChannelAnalysisResponse);
+        setAnalysis(payload as ChannelAnalysisReadModel);
         setSearchTerm("");
         setSortKey("momentum");
         setMinViews("");
@@ -175,6 +260,111 @@ export function CompetitorAnalysisWorkspace() {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleSaveSnapshot() {
+    if (!analysis) {
+      return;
+    }
+
+    setIsSavingSnapshot(true);
+    setSnapshotMessage(null);
+
+    try {
+      if (!snapshotSessionId) {
+        throw new Error("Snapshot session is still initializing. Try again in a moment.");
+      }
+
+      const response = await fetch("/api/analysis-snapshots", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-vidmetrics-session-id": snapshotSessionId,
+        },
+        body: JSON.stringify({
+          analysis,
+        }),
+      });
+
+      const payload = (await response.json()) as
+        | SaveAnalysisSnapshotResponse
+        | {
+            error?: {
+              message?: string;
+            };
+          };
+
+      if (!response.ok) {
+        const errorPayload = payload as {
+          error?: {
+            message?: string;
+          };
+        };
+
+        throw new Error(errorPayload.error?.message ?? "Unable to save this snapshot.");
+      }
+
+      const saved = payload as SaveAnalysisSnapshotResponse;
+
+      setSnapshotMessage({
+        tone: "success",
+        text: `Snapshot saved at ${new Date(saved.savedAt).toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        })}.`,
+      });
+      await loadSavedSnapshots(snapshotSessionId);
+    } catch (error) {
+      setSnapshotMessage({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Unable to save this snapshot right now.",
+      });
+    } finally {
+      setIsSavingSnapshot(false);
+    }
+  }
+
+  async function handleClearSnapshots() {
+    if (!snapshotSessionId) {
+      return;
+    }
+
+    setIsClearingSnapshots(true);
+    setSnapshotMessage(null);
+
+    try {
+      const response = await fetch("/api/analysis-snapshots", {
+        method: "DELETE",
+        headers: {
+          "x-vidmetrics-session-id": snapshotSessionId,
+        },
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json()) as {
+          error?: {
+            message?: string;
+          };
+        };
+
+        throw new Error(payload.error?.message ?? "Unable to clear this demo session.");
+      }
+
+      startTransition(() => {
+        setSavedSnapshots([]);
+      });
+      setSnapshotMessage({
+        tone: "success",
+        text: "Current-session snapshots cleared.",
+      });
+    } catch (error) {
+      setSnapshotMessage({
+        tone: "error",
+        text: error instanceof Error ? error.message : "Unable to clear this demo session.",
+      });
+    } finally {
+      setIsClearingSnapshots(false);
     }
   }
 
@@ -359,25 +549,64 @@ export function CompetitorAnalysisWorkspace() {
                     </span>
                   </div>
                   <p className="mt-2 text-sm text-[color:var(--color-muted)]">
-                    {formatInteger(analysis.channel.subscriberCount)} subscribers • Public
+                    {formatInteger(analysis.channel.subscriberCount)} subscribers and public
                     competitor snapshot
                   </p>
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={() => exportVideosToCsv(analysis.channel.title, filteredVideos)}
-                disabled={filteredVideos.length === 0}
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-[color:var(--color-border)] bg-[rgba(255,252,246,0.9)] px-5 text-sm font-semibold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <Download className="h-4 w-4" />
-                Export filtered CSV
-              </button>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={handleSaveSnapshot}
+                  disabled={isSavingSnapshot}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-[color:var(--color-border)] bg-white px-5 text-sm font-semibold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isSavingSnapshot ? (
+                    <>
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                      Saving
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Save snapshot
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => exportVideosToCsv(analysis.channel.title, filteredVideos)}
+                  disabled={filteredVideos.length === 0}
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-[color:var(--color-border)] bg-[rgba(255,252,246,0.9)] px-5 text-sm font-semibold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Download className="h-4 w-4" />
+                  Export filtered CSV
+                </button>
+              </div>
             </div>
           </section>
 
+          {snapshotMessage ? (
+            <section
+              className={`rounded-[24px] border px-4 py-3 text-sm ${
+                snapshotMessage.tone === "success"
+                  ? "border-[rgba(16,120,105,0.2)] bg-[rgba(232,247,243,0.9)] text-[color:var(--color-accent)]"
+                  : "border-[rgba(191,87,70,0.2)] bg-[rgba(255,240,235,0.85)] text-[color:var(--color-danger)]"
+              }`}
+            >
+              {snapshotMessage.text}
+            </section>
+          ) : null}
+
           <PerformanceSummaryCards analysis={analysis} />
+          <SavedSnapshotsPanel
+            snapshots={savedSnapshots}
+            isLoading={isLoadingSnapshots}
+            isClearing={isClearingSnapshots}
+            onClear={handleClearSnapshots}
+          />
 
           <section className="rounded-[32px] border border-[color:var(--color-border)] bg-white/88 p-5 shadow-[0_18px_50px_rgba(31,35,33,0.07)]">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -456,7 +685,7 @@ export function CompetitorAnalysisWorkspace() {
                   >
                     <option value="all">All lengths</option>
                     <option value="under10">Under 10 min</option>
-                    <option value="10to20">10–20 min</option>
+                    <option value="10to20">10-20 min</option>
                     <option value="20plus">20+ min</option>
                   </select>
                 </label>

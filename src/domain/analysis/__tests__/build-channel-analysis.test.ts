@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildChannelAnalysis, createAnalysisWindow } from "@/domain/analysis/build-channel-analysis";
+import { buildChannelAnalysis, createAnalysisFrame } from "@/domain/analysis/build-channel-analysis";
 import type { SourceChannelSnapshot } from "@/ports/competitor-channel-source";
 
 const snapshot: SourceChannelSnapshot = {
@@ -63,7 +63,7 @@ describe("buildChannelAnalysis", () => {
   it("calculates derived metrics and sorts videos by views per day", () => {
     const analysis = buildChannelAnalysis(
       snapshot,
-      createAnalysisWindow(new Date("2026-03-26T10:00:00.000Z")),
+      createAnalysisFrame(new Date("2026-03-26T10:00:00.000Z")),
     );
 
     expect(analysis.videos.map((video) => video.id)).toEqual([
@@ -75,6 +75,7 @@ describe("buildChannelAnalysis", () => {
 
     expect(analysis.videos[0]).toMatchObject({
       id: "velocity-1",
+      durationSeconds: 494,
       viewsPerDay: 60000,
       trend: "hot",
     });
@@ -89,14 +90,19 @@ describe("buildChannelAnalysis", () => {
   it("builds summary metrics for the dashboard cards", () => {
     const analysis = buildChannelAnalysis(
       snapshot,
-      createAnalysisWindow(new Date("2026-03-26T10:00:00.000Z")),
+      createAnalysisFrame(new Date("2026-03-26T10:00:00.000Z")),
     );
 
-    expect(analysis.window.label).toBe("March 2026");
+    expect(analysis.window).toEqual({
+      monthKey: "2026-03",
+      startAt: "2026-03-01T00:00:00.000Z",
+      endAt: "2026-04-01T00:00:00.000Z",
+    });
     expect(analysis.summary.uploadCount).toBe(4);
     expect(analysis.summary.averageViewsPerDay).toBe(28012);
     expect(analysis.summary.averageEngagementRate).toBe(0.0295);
     expect(analysis.summary.topPerformer).toMatchObject({
+      videoId: "velocity-1",
       title: "Breaking Format Explained",
       viewsPerDay: 60000,
     });

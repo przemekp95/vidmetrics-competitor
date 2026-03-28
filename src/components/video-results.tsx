@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import type { CompetitorVideo } from "@/domain/analysis/types";
+import type { CompetitorVideoReadModel } from "@/application/read-models/analysis-read-model";
 import {
   formatCompactNumber,
   formatInteger,
@@ -8,7 +8,7 @@ import {
   formatPublishedDate,
 } from "@/lib/formatters";
 
-function TrendBadge({ trend }: { trend: CompetitorVideo["trend"] }) {
+function TrendBadge({ trend }: { trend: CompetitorVideoReadModel["trend"] }) {
   const theme =
     trend === "hot"
       ? "bg-[rgba(16,120,105,0.12)] text-[color:var(--color-accent)]"
@@ -28,7 +28,7 @@ function TrendBadge({ trend }: { trend: CompetitorVideo["trend"] }) {
 export function VideoResults({
   videos,
 }: {
-  videos: CompetitorVideo[];
+  videos: CompetitorVideoReadModel[];
 }) {
   if (videos.length === 0) {
     return (

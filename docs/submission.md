@@ -2,68 +2,105 @@
 
 ## Build Breakdown
 
-This MVP was built as a greenfield Next.js 16 App Router application with Tailwind 4 styling.
-The implementation is split into a lean hexagonal shape so the server-side YouTube integration stays
-behind ports and adapters, while domain logic remains isolated from transport and UI concerns.
+This codebase reflects two phases:
 
-What was built:
+- Initial MVP implementation of the competitor analysis dashboard.
+- A hardening and architecture pass that added client-safe errors, query/command separation,
+  browser-session snapshots, rate limiting, and explicit read-model mapping.
 
-- A public competitor analysis workspace with a polished SaaS layout.
-- A server-side `POST /api/analyze` route that resolves a YouTube channel URL and returns a normalized analysis payload.
-- A YouTube Data API adapter that loads public channel metadata, uploads, and video statistics.
-- Domain logic for current-month filtering, momentum ranking, derived metrics, and trend labels.
-- Responsive filtering, sorting, and CSV export for the analyzed video list.
+Tracked time in the hardening pass was roughly 2 hours including implementation, verification,
+deployment repair, and live smoke testing. The original MVP build time was not instrumented closely
+ enough in-repo to claim a precise historical duration.
 
-## AI-Assisted Workflow
+Tools and frameworks used:
 
-AI was used to move quickly across three areas:
+- Next.js 16 App Router
+- React 19
+- Tailwind 4
+- Vitest
+- Playwright MCP for browser verification
+- Vercel CLI / Vercel deployment
+- YouTube Data API v3
+- OpenAI Codex for scaffolding, refactor acceleration, and verification loops
 
-- Scaffolding the Next.js application structure and dependency selection.
-- Drafting and refining the analysis architecture, including the domain/application split.
-- Producing the initial UI composition and documentation structure, then iterating against real build and test output.
+What was accelerated or automated:
 
-The implementation still followed an evidence-first loop for the logic-heavy parts:
+- scaffolding and refactor slicing
+- route and mapper generation
+- test drafting for the new query/command behavior
+- browser smoke verification against the deployed app
 
-- Write tests for URL parsing, metric derivation, and route normalization.
-- Run the tests and confirm a red state.
-- Implement the smallest code needed to pass.
-- Re-run the tests and then verify lint and production build output.
+What was kept manual:
 
-## Tradeoffs
+- architecture decisions and tradeoffs
+- final UI shaping
+- error handling and operator-safe messaging
+- live deployment validation
 
-- I used public YouTube metrics only. Competitor channels cannot expose owner-only data such as watch time, CTR, or retention.
-- I chose a lean hexagonal structure instead of full enterprise DDD. The domain is real, but the product does not need heavy ceremony.
-- The dashboard favors clarity and demo value over dense analytics depth. This keeps the Monday presentation strong without overbuilding.
-- The URL resolver supports modern channel URL shapes first, with best-effort fallback for legacy custom URLs.
+## Product Thinking
 
-## What Is Missing
+What still feels missing:
 
-- No authentication or saved workspaces.
-- No database or historical trend storage.
-- No private-channel analytics, because the official competitor path does not provide them.
-- No multi-channel comparison view yet.
-- No scheduled refresh or background sync.
-- No advanced charting beyond the current momentum summary.
+- durable persistence for saved reports
+- multi-channel comparison
+- historical snapshots across weeks or months
+- richer narrative insights on why a video is trending
+- auth, sharing, and team workflows
 
-## Version 2 Ideas
+Version 2 priorities:
 
-- Add saved reports and team sharing.
-- Add historical snapshots so trends can be compared week over week.
-- Add channel comparison mode for two or more competitors.
-- Add narrative insights such as "fastest risers" and "format mix".
-- Add richer charts for upload cadence, engagement efficiency, and month-over-month movement.
-- Add better URL intelligence and channel discovery when users paste non-canonical links.
+- durable snapshot storage and report history
+- side-by-side channel comparison
+- richer charting for cadence and engagement efficiency
+- saved views and reusable filters
+- automated refresh or scheduled snapshot capture
 
-## 5-Minute Loom Outline
+## Architecture Decisions
 
-0:00-0:30 - State the goal: a fast competitor analysis MVP for client demos.
+CQRS:
 
-0:30-1:30 - Walk through the homepage, URL input, and the public-metrics constraint.
+- query side: analyze competitor channel, list saved snapshots
+- command side: save snapshot, clear current-session snapshots
+- command persistence is intentionally non-durable in this iteration to protect demo scope
 
-1:30-2:30 - Show the analysis results: summary cards, momentum chart, filters, and sortable table.
+DDD:
 
-2:30-3:30 - Demonstrate CSV export and responsive behavior on a smaller viewport.
+- the domain keeps ranking, trend, and summary logic
+- presentation-only fields such as `videoUrl`, `durationText`, and month labels are mapped outside
+  the domain
+- the code remains a pragmatic DDD slice rather than a full enterprise model
 
-3:30-4:15 - Explain the architecture: Next.js App Router, server-side YouTube adapter, domain logic, and lean hexagonal boundaries.
+TDD:
 
-4:15-5:00 - Close with tradeoffs, what is missing, and the strongest v2 opportunities.
+- the new hardening work followed test-first changes for routes, handlers, mapping, and request
+  guards
+- the earlier greenfield MVP commits do not provide enough granularity to prove full historical TDD
+
+## Deployment And Smoke
+
+Production URL:
+
+- `https://vidmetrics-competitor.vercel.app`
+
+Smoke checklist:
+
+- homepage desktop
+- homepage mobile
+- analyze `@MKBHD`
+- filter and sort
+- CSV export
+- save snapshot
+- list current-session snapshots
+- clear current-session snapshots
+
+## Loom
+
+Loom URL: pending recording before submission.
+
+Recommended 5-minute walkthrough:
+
+1. State the client problem and the Monday demo goal.
+2. Show the main analyze flow from pasted channel URL to ranked results.
+3. Show filters, chart, CSV export, and current-session snapshots.
+4. Explain CQRS, domain mapping, and the request guard in one minute.
+5. Close with tradeoffs, missing v2 items, and why the implementation stayed demo-first.

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { createAnalyzeCompetitorChannel } from "@/application/create-analyze-competitor-channel";
+import { createAnalyzeCompetitorChannelQueryHandler } from "@/application/queries/analyze-competitor-channel-query-handler";
 import type { SourceChannelSnapshot } from "@/ports/competitor-channel-source";
 
 const snapshot: SourceChannelSnapshot = {
@@ -29,21 +29,21 @@ const snapshot: SourceChannelSnapshot = {
   },
 };
 
-describe("createAnalyzeCompetitorChannel", () => {
-  it("coordinates the resolver and source to build the dashboard payload", async () => {
+describe("createAnalyzeCompetitorChannelQueryHandler", () => {
+  it("coordinates the resolver and source to build the domain analysis", async () => {
     const resolver = {
       resolve: vi.fn().mockResolvedValue({ type: "handle" as const, value: "publisherone" }),
     };
     const source = {
       fetchCurrentMonthVideos: vi.fn().mockResolvedValue(snapshot),
     };
-    const analyze = createAnalyzeCompetitorChannel({
+    const handle = createAnalyzeCompetitorChannelQueryHandler({
       resolver,
       source,
       now: () => new Date("2026-03-26T10:00:00.000Z"),
     });
 
-    const result = await analyze({ channelUrl: "https://www.youtube.com/@publisherone" });
+    const result = await handle({ channelUrl: "https://www.youtube.com/@publisherone" });
 
     expect(resolver.resolve).toHaveBeenCalledWith("https://www.youtube.com/@publisherone");
     expect(source.fetchCurrentMonthVideos).toHaveBeenCalledWith(
@@ -54,10 +54,15 @@ describe("createAnalyzeCompetitorChannel", () => {
     );
     expect(result.channel.title).toBe("Publisher One");
     expect(result.summary.uploadCount).toBe(1);
+    expect(result.videos[0]).toMatchObject({
+      id: "video-1",
+      durationSeconds: 575,
+      viewsPerDay: 40000,
+    });
   });
 
   it("returns a valid empty state when the channel has no uploads in the current month", async () => {
-    const analyze = createAnalyzeCompetitorChannel({
+    const handle = createAnalyzeCompetitorChannelQueryHandler({
       resolver: {
         resolve: vi.fn().mockResolvedValue({ type: "id" as const, value: "channel-9" }),
       },
@@ -71,7 +76,7 @@ describe("createAnalyzeCompetitorChannel", () => {
       now: () => new Date("2026-03-26T10:00:00.000Z"),
     });
 
-    const result = await analyze({ channelUrl: "https://www.youtube.com/channel/channel-9" });
+    const result = await handle({ channelUrl: "https://www.youtube.com/channel/channel-9" });
 
     expect(result.summary.uploadCount).toBe(0);
     expect(result.videos).toEqual([]);

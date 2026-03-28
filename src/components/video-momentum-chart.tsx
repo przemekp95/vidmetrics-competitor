@@ -2,10 +2,10 @@
 
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-import type { CompetitorVideo } from "@/domain/analysis/types";
+import type { CompetitorVideoReadModel } from "@/application/read-models/analysis-read-model";
 import { formatCompactNumber } from "@/lib/formatters";
 
-const trendColors: Record<CompetitorVideo["trend"], string> = {
+const trendColors: Record<CompetitorVideoReadModel["trend"], string> = {
   hot: "var(--color-accent)",
   above_avg: "var(--color-sun)",
   steady: "var(--color-foreground-soft)",
@@ -14,11 +14,11 @@ const trendColors: Record<CompetitorVideo["trend"], string> = {
 export function VideoMomentumChart({
   videos,
 }: {
-  videos: CompetitorVideo[];
+  videos: CompetitorVideoReadModel[];
 }) {
   const chartData = videos.slice(0, 6).map((video) => ({
     id: video.id,
-    title: video.title.length > 24 ? `${video.title.slice(0, 24)}…` : video.title,
+    title: video.title.length > 24 ? `${video.title.slice(0, 24)}...` : video.title,
     viewsPerDay: video.viewsPerDay,
     trend: video.trend,
   }));

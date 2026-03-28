@@ -97,6 +97,7 @@ function getRequiredApiKey(apiKey?: string) {
       "CONFIGURATION_ERROR",
       "YOUTUBE_API_KEY is missing. Add it locally and in Vercel before running live analysis.",
       500,
+      "Live competitor analysis is unavailable right now.",
     );
   }
 
@@ -136,14 +137,24 @@ function mapApiError(status: number, payload: { error?: { errors?: Array<{ reaso
   const message = payload.error?.errors?.[0]?.message ?? payload.error?.message ?? "Upstream YouTube API request failed.";
 
   if (reason === "quotaExceeded") {
-    return new ApplicationError("YOUTUBE_QUOTA_EXCEEDED", "YouTube quota exceeded.", 503);
+    return new ApplicationError(
+      "YOUTUBE_QUOTA_EXCEEDED",
+      "YouTube quota exceeded.",
+      503,
+      "Live competitor analysis is temporarily unavailable. Please try again shortly.",
+    );
   }
 
   if (status === 404) {
     return new ApplicationError("CHANNEL_NOT_FOUND", "We could not find that YouTube channel.", 404);
   }
 
-  return new ApplicationError("YOUTUBE_API_ERROR", message, 502);
+  return new ApplicationError(
+    "YOUTUBE_API_ERROR",
+    message,
+    502,
+    "Live competitor analysis is temporarily unavailable. Please try again shortly.",
+  );
 }
 
 async function requestJson<T>(

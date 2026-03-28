@@ -1,7 +1,6 @@
-export type TrendLabel = "hot" | "above_avg" | "steady";
+export type Trend = "hot" | "above_avg" | "steady";
 
 export type AnalysisWindow = {
-  label: string;
   monthKey: string;
   startAt: string;
   endAt: string;
@@ -19,19 +18,18 @@ export type AnalyzedChannel = {
   channelUrl: string;
 };
 
-export type CompetitorVideo = {
+export type VideoPerformance = {
   id: string;
   title: string;
-  videoUrl: string;
   thumbnailUrl: string;
   publishedAt: string;
-  durationText: string;
+  durationSeconds: number;
   views: number;
   likes: number;
   comments: number;
   viewsPerDay: number;
   engagementRate: number;
-  trend: TrendLabel;
+  trend: Trend;
 };
 
 export type ChannelSummary = {
@@ -39,9 +37,9 @@ export type ChannelSummary = {
   averageViewsPerDay: number;
   averageEngagementRate: number;
   topPerformer: {
+    videoId: string;
     title: string;
     viewsPerDay: number;
-    videoUrl: string;
   } | null;
 };
 
@@ -50,10 +48,17 @@ export type SourceMetadata = {
   cache: "memory-ttl" | "none";
 };
 
-export type ChannelAnalysisResponse = {
+export type ChannelAnalysis = {
   channel: AnalyzedChannel;
   window: AnalysisWindow;
   summary: ChannelSummary;
-  videos: CompetitorVideo[];
+  videos: VideoPerformance[];
   source: SourceMetadata;
+};
+
+export type AnalysisSnapshot = {
+  snapshotId: string;
+  label: string | null;
+  savedAt: string;
+  analysis: ChannelAnalysis;
 };

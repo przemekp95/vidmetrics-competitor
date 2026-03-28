@@ -1,95 +1,74 @@
-# Project Title
+# VidMetrics Competitor Pulse
 
-VidMetrics Competitor Pulse
+VidMetrics Competitor Pulse is a Next.js 16 MVP for competitor YouTube analysis. An analyst can
+paste a public channel URL, inspect current-month uploads ranked by momentum, filter the shortlist,
+export CSV, and save temporary snapshots for the current browser demo session.
 
-## Description
+Live URL: `https://vidmetrics-competitor.vercel.app`
 
-VidMetrics Competitor Pulse is a Next.js 16 MVP for competitor YouTube channel analysis.
-It lets an analyst paste a public channel URL, resolve the channel on the server, and review
-current-month uploads ranked by public momentum. The product is designed as a polished SaaS-style
-demo with summary cards, a momentum chart, sortable and filterable results, and CSV export.
+## Features
 
-## API Endpoints
+- `POST /api/analyze` returns the existing analysis payload for a YouTube channel URL.
+- `POST /api/analysis-snapshots` saves a temporary browser-session snapshot.
+- `GET /api/analysis-snapshots` lists snapshots for the active browser session.
+- `DELETE /api/analysis-snapshots` clears snapshots for the active browser session.
+- Responsive dashboard with summary cards, momentum chart, sortable table, filters, and CSV export.
 
-- `POST /api/analyze` - Accepts `{ "channelUrl": "..." }` and returns a normalized competitor analysis payload.
+## Architecture
 
-## Architecture Overview
+The app now uses a small CQRS split without external persistence:
 
-The app uses a lean hexagonal structure:
+- Query side: analyze competitor channel, list current-session snapshots.
+- Command side: save analysis snapshot, clear current-session snapshots.
+- Domain: velocity, trend, ranking, and summary calculations.
+- Read models: transport/UI payloads are mapped outside the domain.
+- Infrastructure: YouTube Data API adapter, session-scoped in-memory snapshot repository, and
+  in-memory request guard.
 
-- `app` handles the page and route entrypoints.
-- `application` coordinates the analysis use case.
-- `domain` owns ranking, metrics, and window calculations.
-- `ports` defines the source and resolver interfaces.
-- `infrastructure` contains the YouTube Data API adapter and channel URL resolver.
+This is intentionally a pragmatic DDD slice, not a heavy enterprise rewrite. The domain is kept free
+of presentation-only fields such as `videoUrl`, `durationText`, and month labels.
 
-The UI is a client-driven workspace backed by a server-side analysis route. Public YouTube data is
-resolved and normalized on the server, then rendered into a responsive dashboard. TDD is used for
-domain and application logic, while the UI focuses on polished interaction and presentation.
+## TDD Notes
 
-## Project Structure
+The refactor and hardening pass in this repo was implemented test-first for the new behavior:
 
-```text
-.
-|-- src/
-|   |-- app/
-|   |-- application/
-|   |-- components/
-|   |-- domain/
-|   |-- infrastructure/
-|   |-- ports/
-|   |-- shared/
-|   |-- transport/
-|   `-- lib/
-|-- public/
-|-- docs/
-`-- package.json
-```
+- rate limiting and client-safe errors
+- query and command handlers
+- read-model mapping
+- snapshot transport routes
 
-## Getting Started
+The older MVP history in git is not detailed enough to prove a full historical red-green workflow
+for the original greenfield implementation.
 
-### Dependencies
+## Local Setup
+
+Requirements:
 
 - Node.js 22 LTS or newer
 - npm
-- A YouTube Data API v3 key
-- A Vercel account for deployment
+- YouTube Data API v3 key
+- Vercel account for deployment
 
-### Environment Variables
-
-- `YOUTUBE_API_KEY` - Required for server-side YouTube Data API requests.
-
-Copy `.env.example` to `.env.local` and add the key before running the app.
-
-### Installing
-
-1. Install dependencies.
+Install and run:
 
 ```bash
 npm install
-```
-
-2. Copy the example environment file and add your YouTube API key.
-
-```bash
 copy .env.example .env.local
 ```
 
-Then edit `.env.local`:
+Set:
 
 ```bash
 YOUTUBE_API_KEY=your_key_here
 ```
 
-3. Run the app in development mode.
-
-## Executing program
+Then:
 
 ```bash
 npm run dev
 ```
 
-Open `http://localhost:3000` in your browser.
+Open `http://localhost:3000`.
 
 Useful checks:
 
@@ -100,30 +79,35 @@ npm run test:run
 npm run build
 ```
 
-## Help
+## Deploy Notes
 
-- If analysis returns a quota or API error, verify `YOUTUBE_API_KEY` and the Google Cloud YouTube Data API setup.
-- If a pasted URL does not resolve, try a canonical channel URL or an `@handle` URL.
-- If images fail to load in development, confirm the source domain is covered by `next.config.ts` image patterns.
-- If the app will not start, verify that Node 22 LTS is installed and that npm is using the same installation.
+The production project is linked to Vercel. `YOUTUBE_API_KEY` must exist in runtime env for the app
+to work outside local development.
+
+Example CLI flow:
+
+```bash
+npx vercel env add YOUTUBE_API_KEY production --value "your_key_here" --yes
+npx vercel --prod --yes
+```
+
+## Smoke Checklist
+
+- homepage renders on desktop
+- homepage renders on mobile
+- analyze `https://www.youtube.com/@MKBHD`
+- sort and filter work after analysis
+- CSV export downloads
+- save snapshot works
+- saved snapshots list renders
+- clear session works
+
+## Repository Notes
+
+- Public competitor data only: watch time, CTR, retention, and impressions are not available.
+- Snapshot persistence is intentionally non-durable and scoped to the active browser session.
+- The request guard adds per-process rate limiting and in-flight request deduplication.
 
 ## Authors
 
 - OpenAI Codex
-
-## Version History
-
-- 0.1.0
-  - Initial MVP implementation for competitor YouTube channel analysis.
-  - Added server-side YouTube data normalization, UI filters, and CSV export.
-
-## License
-
-TBD
-
-## Acknowledgments
-
-- Next.js
-- Tailwind CSS
-- YouTube Data API v3
-- Vercel

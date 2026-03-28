@@ -1,10 +1,10 @@
-import type { ChannelAnalysisResponse } from "@/domain/analysis/types";
+import type { ChannelAnalysisReadModel } from "@/application/read-models/analysis-read-model";
 import { formatCompactNumber, formatPercent } from "@/lib/formatters";
 
 export function PerformanceSummaryCards({
   analysis,
 }: {
-  analysis: ChannelAnalysisResponse;
+  analysis: ChannelAnalysisReadModel;
 }) {
   const cards = [
     {
