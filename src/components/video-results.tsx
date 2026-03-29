@@ -32,11 +32,11 @@ export function VideoResults({
 }) {
   if (videos.length === 0) {
     return (
-      <section className="rounded-[32px] border border-dashed border-[color:var(--color-border)] bg-white/70 p-8">
-        <h2 className="text-xl font-semibold tracking-tight text-[color:var(--color-foreground)]">
+      <section className="neon-empty-state rounded-[32px] p-8">
+        <h2 className="text-xl font-semibold tracking-tight neon-title">
           No qualifying videos yet
         </h2>
-        <p className="mt-3 max-w-xl text-sm leading-6 text-[color:var(--color-muted)]">
+        <p className="mt-3 max-w-xl text-sm leading-6 neon-muted-copy">
           This channel does not have public uploads inside the active month window. Try another
           competitor or wait for new uploads.
         </p>
@@ -45,17 +45,15 @@ export function VideoResults({
   }
 
   return (
-    <section className="rounded-[32px] border border-[color:var(--color-border)] bg-white/90 shadow-[0_18px_50px_rgba(31,35,33,0.07)]">
-      <div className="flex items-center justify-between gap-4 border-b border-[color:var(--color-border)] px-6 py-5">
+    <section className="neon-panel rounded-[32px]">
+      <div className="flex items-center justify-between gap-4 border-b neon-divider px-6 py-5">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-[color:var(--color-muted)]">
-            Video table
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[color:var(--color-foreground)]">
+          <p className="eyebrow">Video table</p>
+          <h2 className="mt-4 text-2xl font-semibold tracking-tight neon-title">
             Current-month winners
           </h2>
         </div>
-        <p className="max-w-sm text-right text-sm leading-6 text-[color:var(--color-muted)]">
+        <p className="max-w-sm text-right text-sm leading-6 neon-muted-copy">
           Sort and filter to isolate the clips driving the strongest public momentum right now.
         </p>
       </div>
@@ -63,7 +61,7 @@ export function VideoResults({
       <div className="hidden overflow-x-auto xl:block">
         <table className="min-w-full border-collapse">
           <thead>
-            <tr className="border-b border-[color:var(--color-border)] bg-[rgba(255,252,246,0.9)] text-left text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted)]">
+            <tr className="border-b neon-divider bg-[rgba(8,15,31,0.72)] text-left text-xs uppercase tracking-[0.18em] text-[color:var(--color-muted)]">
               <th className="px-6 py-4">Video</th>
               <th className="px-4 py-4">Published</th>
               <th className="px-4 py-4">Duration</th>
@@ -78,7 +76,7 @@ export function VideoResults({
             {videos.map((video) => (
               <tr
                 key={video.id}
-                className="border-b border-[color:rgba(216,208,194,0.65)] align-top transition-colors hover:bg-[rgba(255,248,233,0.45)]"
+                className="neon-table-row border-b align-top"
               >
                 <td className="px-6 py-5">
                   <div className="flex items-start gap-4">
@@ -94,7 +92,7 @@ export function VideoResults({
                         href={video.videoUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="line-clamp-2 text-base font-semibold tracking-tight text-[color:var(--color-foreground)] underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-4 transition-colors hover:text-[color:var(--color-accent)]"
+                        className="neon-link line-clamp-2 text-base font-semibold tracking-tight text-[color:var(--color-foreground)]"
                       >
                         {video.title}
                       </a>
@@ -136,7 +134,7 @@ export function VideoResults({
         {videos.map((video) => (
           <article
             key={video.id}
-            className="rounded-[28px] border border-[color:var(--color-border)] bg-[rgba(255,252,246,0.7)] p-4"
+            className="neon-shell-soft rounded-[28px] p-4"
           >
             <Image
               src={video.thumbnailUrl}
@@ -150,7 +148,7 @@ export function VideoResults({
                 href={video.videoUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="text-lg font-semibold tracking-tight text-[color:var(--color-foreground)] underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-4"
+                className="neon-link text-lg font-semibold tracking-tight text-[color:var(--color-foreground)]"
               >
                 {video.title}
               </a>

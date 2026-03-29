@@ -2,7 +2,6 @@
 
 import "@testing-library/jest-dom/vitest";
 
-import type { ReactNode } from "react";
 import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -11,26 +10,29 @@ import { VideoMomentumChart } from "@/components/video-momentum-chart";
 
 let resizeObserverCallback: ResizeObserverCallback | null = null;
 
-vi.mock("recharts", () => ({
-  BarChart: ({
-    children,
+vi.mock("@/components/visual-system/pixi-metric-chart-stage", () => ({
+  calculateMetricHitAreas: (width: number, height: number, itemCount: number) =>
+    Array.from({ length: itemCount }).map((_, index) => ({
+      left: index * Math.max(1, width / Math.max(itemCount, 1)),
+      width: Math.max(1, width / Math.max(itemCount, 1)),
+      top: 24,
+      height: Math.max(1, height - 48),
+    })),
+  PixiMetricChartStage: ({
     height,
+    testId,
     width,
   }: {
-    children: ReactNode;
     height: number;
+    testId?: string;
     width: number;
   }) => (
-    <div data-height={height} data-testid="bar-chart" data-width={width}>
-      {children}
-    </div>
+    <div
+      data-height={height}
+      data-testid={testId}
+      data-width={width}
+    />
   ),
-  Bar: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  CartesianGrid: () => null,
-  Cell: () => null,
-  Tooltip: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
 }));
 
 class ResizeObserverMock {
@@ -68,11 +70,11 @@ describe("VideoMomentumChart", () => {
     globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
   });
 
-  it("renders the chart only after the container has positive dimensions", () => {
+  it("renders the Pixi stage only after the container has positive dimensions", () => {
     render(<VideoMomentumChart videos={sampleVideos} />);
 
-    expect(screen.getByText("Preparing chart...")).toBeInTheDocument();
-    expect(screen.queryByTestId("bar-chart")).not.toBeInTheDocument();
+    expect(screen.getByText("Preparing Pixi chart surface...")).toBeInTheDocument();
+    expect(screen.queryByTestId("pixi-momentum-stage")).not.toBeInTheDocument();
     expect(resizeObserverCallback).not.toBeNull();
 
     act(() => {
@@ -89,8 +91,15 @@ describe("VideoMomentumChart", () => {
       );
     });
 
-    expect(screen.queryByText("Preparing chart...")).not.toBeInTheDocument();
-    expect(screen.getByTestId("bar-chart")).toHaveAttribute("data-width", "672");
-    expect(screen.getByTestId("bar-chart")).toHaveAttribute("data-height", "320");
+    expect(screen.queryByText("Preparing Pixi chart surface...")).not.toBeInTheDocument();
+    expect(screen.getByTestId("pixi-momentum-stage")).toHaveAttribute("data-width", "672");
+    expect(screen.getByTestId("pixi-momentum-stage")).toHaveAttribute("data-height", "320");
+  });
+
+  it("keeps a readable DOM overlay for the active readout", () => {
+    render(<VideoMomentumChart videos={sampleVideos} />);
+
+    expect(screen.getByText("Active readout")).toBeInTheDocument();
+    expect(screen.getByText("Every iPhone Ever. SAME photo!")).toBeInTheDocument();
   });
 });

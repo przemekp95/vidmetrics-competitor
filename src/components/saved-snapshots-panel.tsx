@@ -17,17 +17,15 @@ export function SavedSnapshotsPanel({
   return (
     <section
       id="session-snapshots"
-      className="rounded-4xl border border-(--color-border) bg-white/90 p-6 shadow-[0_18px_50px_rgba(31,35,33,0.07)]"
+      className="neon-panel rounded-[34px] p-6"
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-(--color-muted)">
-            Free workflow
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-(--color-foreground)">
+          <p className="eyebrow">Free workflow</p>
+          <h2 className="mt-4 text-2xl font-semibold tracking-tight neon-title">
             Current session snapshots
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-(--color-muted)">
+          <p className="mt-3 max-w-2xl text-sm leading-6 neon-muted-copy">
             Snapshot saves stay scoped to this browser session so your demo starts clean. They
             reset when you clear them, open a fresh browser session, or after a new deployment.
           </p>
@@ -38,12 +36,12 @@ export function SavedSnapshotsPanel({
               type="button"
               onClick={onClear}
               disabled={isClearing}
-              className="rounded-3xl border border-(--color-border) bg-white px-4 py-3 text-sm font-medium text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent) disabled:cursor-not-allowed disabled:opacity-60"
+              className="neon-button-outline rounded-3xl px-4 py-3 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isClearing ? "Clearing" : "Clear session"}
             </button>
           ) : null}
-          <div className="rounded-3xl border border-(--color-border) bg-[rgba(255,252,246,0.9)] px-4 py-3 text-sm text-(--color-muted)">
+          <div className="neon-chip rounded-3xl px-4 py-3 text-sm">
             {snapshots.length} snapshot{snapshots.length === 1 ? "" : "s"} in this session
           </div>
         </div>
@@ -54,16 +52,16 @@ export function SavedSnapshotsPanel({
           {Array.from({ length: 2 }).map((_, index) => (
             <div
               key={index}
-              className="animate-pulse rounded-3xl border border-(--color-border) bg-[rgba(255,252,246,0.72)] p-5"
+              className="rounded-3xl border border-(--color-border) bg-[rgba(8,15,31,0.48)] p-5"
             >
-              <div className="h-3 w-20 rounded-full bg-[rgba(31,35,33,0.08)]" />
-              <div className="mt-4 h-6 w-3/4 rounded-full bg-[rgba(31,35,33,0.08)]" />
-              <div className="mt-3 h-3 w-1/2 rounded-full bg-[rgba(31,35,33,0.08)]" />
+              <div className="neon-skeleton h-3 w-20 rounded-full" />
+              <div className="neon-skeleton mt-4 h-6 w-3/4 rounded-full" />
+              <div className="neon-skeleton mt-3 h-3 w-1/2 rounded-full" />
             </div>
           ))}
         </div>
       ) : snapshots.length === 0 ? (
-        <div className="mt-6 rounded-3xl border border-dashed border-(--color-border) bg-[rgba(255,252,246,0.72)] p-5 text-sm leading-6 text-(--color-muted)">
+        <div className="neon-empty-state mt-6 rounded-3xl p-5 text-sm leading-6 neon-muted-copy">
           Save a browser-session snapshot to keep a quick reference list during the current demo.
         </div>
       ) : (
@@ -71,7 +69,7 @@ export function SavedSnapshotsPanel({
           {snapshots.map((snapshot) => (
             <article
               key={snapshot.snapshotId}
-              className="rounded-3xl border border-(--color-border) bg-[rgba(255,252,246,0.78)] p-5"
+              className="neon-shell-soft rounded-3xl p-5"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -93,7 +91,7 @@ export function SavedSnapshotsPanel({
                     ) : null}
                   </div>
                 </div>
-                <p className="text-right text-xs uppercase tracking-[0.16em] text-(--color-muted)">
+                <p className="text-right text-xs uppercase tracking-[0.16em] neon-muted-copy">
                   {snapshot.window.label}
                 </p>
               </div>
@@ -126,7 +124,7 @@ export function SavedSnapshotsPanel({
                       href={snapshot.channel.channelUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="font-medium text-(--color-accent) underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-3 transition hover:opacity-80"
+                      className="neon-link font-medium"
                     >
                       Open channel
                     </a>

@@ -1,15 +1,19 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Cell, Tooltip, XAxis, YAxis } from "recharts";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { CompetitorVideoReadModel } from "@/application/read-models/analysis-read-model";
-import { formatCompactNumber } from "@/lib/formatters";
+import {
+  calculateMetricHitAreas,
+  PixiMetricChartStage,
+  type PixiMetricDatum,
+} from "@/components/visual-system/pixi-metric-chart-stage";
+import { formatCompactNumber, formatPercent } from "@/lib/formatters";
 
-const trendColors: Record<CompetitorVideoReadModel["trend"], string> = {
-  hot: "var(--color-accent)",
-  above_avg: "var(--color-sun)",
-  steady: "var(--color-foreground-soft)",
+const trendColors: Record<CompetitorVideoReadModel["trend"], number> = {
+  hot: 0x56faff,
+  above_avg: 0xff63d8,
+  steady: 0x8c63ff,
 };
 
 function useMeasuredChartFrame() {
@@ -39,20 +43,17 @@ function useMeasuredChartFrame() {
     }
 
     function readFrameSize() {
-      const nextWidth = Math.max(0, Math.round(measuredFrame.clientWidth));
-      const nextHeight = Math.max(0, Math.round(measuredFrame.clientHeight));
-
-      updateDimensions(nextWidth, nextHeight);
+      updateDimensions(
+        Math.max(0, Math.round(measuredFrame.clientWidth)),
+        Math.max(0, Math.round(measuredFrame.clientHeight)),
+      );
     }
 
     readFrameSize();
 
     if (typeof ResizeObserver === "undefined") {
       window.addEventListener("resize", readFrameSize);
-
-      return () => {
-        window.removeEventListener("resize", readFrameSize);
-      };
+      return () => window.removeEventListener("resize", readFrameSize);
     }
 
     const resizeObserver = new ResizeObserver((entries) => {
@@ -70,10 +71,7 @@ function useMeasuredChartFrame() {
     });
 
     resizeObserver.observe(measuredFrame);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
+    return () => resizeObserver.disconnect();
   }, []);
 
   return {
@@ -90,88 +88,148 @@ export function VideoMomentumChart({
   videos: CompetitorVideoReadModel[];
 }) {
   const { frameRef, chartWidth, chartHeight, isReady } = useMeasuredChartFrame();
-  const chartData = videos.slice(0, 6).map((video) => ({
-    id: video.id,
-    title: video.title.length > 24 ? `${video.title.slice(0, 24)}...` : video.title,
-    viewsPerDay: video.viewsPerDay,
-    trend: video.trend,
-  }));
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const chartData = useMemo(
+    () =>
+      videos.slice(0, 6).map((video) => ({
+        id: video.id,
+        label: video.title.length > 28 ? `${video.title.slice(0, 28)}...` : video.title,
+        value: video.viewsPerDay,
+        color: trendColors[video.trend],
+        source: video,
+      })),
+    [videos],
+  );
+  const hoveredVideo =
+    chartData.find((item) => item.id === hoveredId)?.source ?? chartData[0]?.source ?? null;
+  const hitAreas = useMemo(
+    () => calculateMetricHitAreas(chartWidth, chartHeight, chartData.length),
+    [chartData.length, chartHeight, chartWidth],
+  );
+  const pixiItems = useMemo<PixiMetricDatum[]>(
+    () =>
+      chartData.map((item) => ({
+        id: item.id,
+        label: item.label,
+        value: item.value,
+        color: item.color,
+      })),
+    [chartData],
+  );
 
   if (chartData.length === 0) {
     return (
-      <section className="rounded-[32px] border border-dashed border-[color:var(--color-border)] bg-white/70 p-8">
-        <h2 className="text-xl font-semibold tracking-tight text-[color:var(--color-foreground)]">
-          Momentum snapshot
+      <section className="neon-panel rounded-[34px] p-8">
+        <p className="eyebrow">Momentum surface</p>
+        <h2 className="mt-4 text-2xl font-semibold tracking-tight neon-title">
+          Velocity scene is standing by
         </h2>
-        <p className="mt-3 max-w-xl text-sm leading-6 text-[color:var(--color-muted)]">
-          Once a channel has uploads in the active month, this chart highlights which videos are
-          accelerating fastest on public view velocity.
+        <p className="mt-3 max-w-xl text-sm leading-6 neon-muted-copy">
+          Once a channel has current-window uploads, this surface switches into a Pixi-rendered
+          velocity chart to show who is accelerating fastest right now.
         </p>
       </section>
     );
   }
 
   return (
-    <section className="min-w-0 rounded-[32px] border border-[color:var(--color-border)] bg-white/90 p-6 shadow-[0_18px_50px_rgba(31,35,33,0.07)]">
-      <div className="flex items-center justify-between gap-4">
+    <section className="neon-panel neon-grid rounded-[34px] p-6">
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-[color:var(--color-muted)]">
-            Momentum chart
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[color:var(--color-foreground)]">
-            View velocity leaders
+          <p className="eyebrow">Momentum surface</p>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight neon-title">
+            Velocity leaders in motion
           </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 neon-muted-copy">
+            Pixi renders the geometry. The overlay keeps tooltips and labels crisp so the chart
+            stays usable during live comparisons.
+          </p>
         </div>
-        <p className="max-w-xs text-right text-sm leading-6 text-[color:var(--color-muted)]">
-          Ranked by views per day from currently public metrics.
-        </p>
+
+        {hoveredVideo ? (
+          <div className="neon-shell-soft rounded-[28px] px-5 py-4 xl:max-w-sm">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--accent)]">
+              Active readout
+            </p>
+            <p className="mt-3 text-lg font-semibold leading-6 text-(--color-foreground)">
+              {hoveredVideo.title}
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <p className="neon-muted-copy">Velocity</p>
+                <p className="mt-1 font-semibold text-(--color-foreground)">
+                  {formatCompactNumber(hoveredVideo.viewsPerDay)}/day
+                </p>
+              </div>
+              <div>
+                <p className="neon-muted-copy">Engagement</p>
+                <p className="mt-1 font-semibold text-(--color-foreground)">
+                  {formatPercent(hoveredVideo.engagementRate)}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      <div ref={frameRef} data-testid="video-momentum-chart-frame" className="mt-6 h-80 min-w-0">
+      <div
+        ref={frameRef}
+        className="relative mt-6 h-[26rem] overflow-hidden rounded-[30px] border border-[rgba(86,250,255,0.14)] bg-[linear-gradient(180deg,rgba(4,9,20,0.86),rgba(8,15,31,0.56))]"
+        data-testid="video-momentum-chart-frame"
+      >
         {isReady ? (
-          <BarChart
-            width={chartWidth}
-            height={chartHeight}
-            data={chartData}
-            margin={{ left: 0, right: 12, top: 6, bottom: 8 }}
-          >
-            <CartesianGrid stroke="rgba(109, 116, 106, 0.14)" strokeDasharray="3 3" vertical={false} />
-            <XAxis
-              dataKey="title"
-              tick={{ fill: "var(--color-muted)", fontSize: 12 }}
-              axisLine={false}
-              tickLine={false}
-              interval={0}
-            />
-            <YAxis
-              tickFormatter={(value) => formatCompactNumber(Number(value))}
-              tick={{ fill: "var(--color-muted)", fontSize: 12 }}
-              axisLine={false}
-              tickLine={false}
-              width={72}
-            />
-            <Tooltip
-              cursor={{ fill: "rgba(16, 120, 105, 0.08)" }}
-              contentStyle={{
-                borderRadius: 20,
-                border: "1px solid rgba(216, 208, 194, 1)",
-                background: "rgba(255, 252, 246, 0.98)",
-                boxShadow: "0 16px 36px rgba(31, 35, 33, 0.12)",
-              }}
-              formatter={(value) => [
-                `${formatCompactNumber(Number(value ?? 0))}/day`,
-                "View velocity",
-              ]}
-            />
-            <Bar dataKey="viewsPerDay" radius={[14, 14, 6, 6]}>
-              {chartData.map((entry) => (
-                <Cell key={entry.id} fill={trendColors[entry.trend]} />
+          <>
+            <div className="absolute inset-0">
+              <PixiMetricChartStage
+                height={chartHeight}
+                hoveredId={hoveredId}
+                items={pixiItems}
+                testId="pixi-momentum-stage"
+                width={chartWidth}
+              />
+            </div>
+
+            {hitAreas.map((area, index) => (
+              <button
+                key={chartData[index]?.id}
+                type="button"
+                aria-label={`Inspect ${chartData[index]?.label}`}
+                className="absolute top-0 block rounded-[18px] bg-transparent outline-none"
+                onBlur={() => setHoveredId((current) => (current === chartData[index]?.id ? null : current))}
+                onFocus={() => setHoveredId(chartData[index]?.id ?? null)}
+                onMouseEnter={() => setHoveredId(chartData[index]?.id ?? null)}
+                onMouseLeave={() => setHoveredId((current) => (current === chartData[index]?.id ? null : current))}
+                style={{
+                  left: `${area.left}px`,
+                  top: `${area.top}px`,
+                  width: `${area.width}px`,
+                  height: `${area.height}px`,
+                }}
+              >
+                <span className="sr-only">{chartData[index]?.label}</span>
+              </button>
+            ))}
+
+            <div className="pointer-events-none absolute inset-x-5 bottom-4 grid gap-2" style={{ gridTemplateColumns: `repeat(${chartData.length}, minmax(0, 1fr))` }}>
+              {chartData.map((item) => (
+                <div
+                  key={item.id}
+                  className={`rounded-2xl border px-3 py-2 text-center transition ${
+                    item.id === hoveredId
+                      ? "border-[rgba(86,250,255,0.4)] bg-[rgba(86,250,255,0.12)]"
+                      : "border-[rgba(112,132,191,0.14)] bg-[rgba(8,15,31,0.46)]"
+                  }`}
+                >
+                  <p className="truncate text-[11px] font-semibold uppercase tracking-[0.12em] text-(--color-muted)">
+                    {item.label}
+                  </p>
+                </div>
               ))}
-            </Bar>
-          </BarChart>
+            </div>
+          </>
         ) : (
-          <div className="flex h-full items-center justify-center rounded-[24px] border border-dashed border-[color:var(--color-border)] bg-[rgba(255,252,246,0.7)] text-sm text-[color:var(--color-muted)]">
-            Preparing chart...
+          <div className="flex h-full items-center justify-center rounded-[24px] border border-dashed border-[rgba(86,250,255,0.24)] bg-[rgba(8,15,31,0.62)] text-sm text-(--color-muted)">
+            Preparing Pixi chart surface...
           </div>
         )}
       </div>

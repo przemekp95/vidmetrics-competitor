@@ -12,7 +12,7 @@ export default function CheckoutReturnPage() {
     >
       <Suspense
         fallback={
-          <section className="rounded-4xl border border-(--color-border) bg-white/90 p-6 text-sm text-(--color-muted) shadow-[0_18px_50px_rgba(31,35,33,0.07)]">
+          <section className="neon-panel rounded-[34px] p-6 text-sm neon-muted-copy">
             Loading billing state...
           </section>
         }

@@ -54,16 +54,14 @@ export function GatedWorkflowsPanel({
   const hasAnyPaidAccess = cards.some((card) => card.isEnabled);
 
   return (
-    <section className="rounded-[32px] border border-[color:var(--color-border)] bg-white/90 p-6 shadow-[0_18px_50px_rgba(31,35,33,0.07)]">
+    <section className="neon-panel neon-grid rounded-[34px] p-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-[color:var(--color-muted)]">
-            Product workflow
-          </p>
-          <h2 className="mt-2 text-3xl font-semibold tracking-tight text-[color:var(--color-foreground)]">
+          <p className="eyebrow">Product workflow</p>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight neon-title">
             Expand the analyzer into a paid workspace.
           </h2>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-[color:var(--color-muted)]">
+          <p className="mt-3 max-w-3xl text-sm leading-6 neon-muted-copy">
             Paid surfaces stay locked until Stripe sandbox checkout reaches webhook-confirmed
             activation.
           </p>
@@ -72,7 +70,7 @@ export function GatedWorkflowsPanel({
         <button
           type="button"
           onClick={onOpenCheckout}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-5 text-sm font-semibold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)]"
+          className="neon-button-outline inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold"
         >
           {hasAnyPaidAccess ? <ShieldCheck className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
           {hasAnyPaidAccess ? "View billing state" : "Upgrade to unlock"}
@@ -84,17 +82,17 @@ export function GatedWorkflowsPanel({
           <article
             key={card.id}
             id={card.id}
-            className="rounded-[28px] border border-[color:var(--color-border)] bg-[rgba(255,252,246,0.76)] p-5"
+            className="neon-shell-soft rounded-[28px] p-5"
           >
             <div className="flex items-start justify-between gap-4">
-              <div className="inline-flex rounded-2xl bg-white/80 p-3 text-[color:var(--color-accent)]">
+              <div className="inline-flex rounded-2xl border border-[rgba(86,250,255,0.16)] bg-[rgba(8,15,31,0.84)] p-3 text-[color:var(--color-accent)]">
                 {card.icon}
               </div>
               <span
                 className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
                   card.isEnabled
-                    ? "bg-[rgba(16,120,105,0.12)] text-[color:var(--color-accent)]"
-                    : "bg-[rgba(31,35,33,0.08)] text-[color:var(--color-foreground-soft)]"
+                    ? "neon-badge"
+                    : "border border-[rgba(112,132,191,0.18)] bg-[rgba(8,15,31,0.7)] text-[color:var(--color-foreground-soft)]"
                 }`}
               >
                 {card.isEnabled ? "Unlocked" : "Locked"}
@@ -114,7 +112,7 @@ export function GatedWorkflowsPanel({
             {card.isEnabled ? (
               <Link
                 href={card.href}
-                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--color-accent)] underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-3 transition hover:opacity-80"
+                className="neon-link mt-5 inline-flex items-center gap-2 text-sm font-semibold"
               >
                 Open workflow
                 <ChevronRight className="h-4 w-4" />
@@ -123,7 +121,7 @@ export function GatedWorkflowsPanel({
               <button
                 type="button"
                 onClick={onOpenCheckout}
-                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--color-accent)] underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-3 transition hover:opacity-80"
+                className="neon-link mt-5 inline-flex items-center gap-2 text-sm font-semibold"
               >
                 Upgrade workflow
                 <ChevronRight className="h-4 w-4" />

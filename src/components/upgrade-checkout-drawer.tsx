@@ -160,7 +160,7 @@ export function UpgradeCheckoutDrawer({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-[rgba(31,35,33,0.34)] backdrop-blur-[1px]">
+    <div className="fixed inset-0 z-50 flex justify-end bg-[rgba(4,8,20,0.62)] backdrop-blur-[6px]">
       <div aria-hidden="true" className="absolute inset-0" onClick={onClose} />
 
       <section
@@ -169,22 +169,20 @@ export function UpgradeCheckoutDrawer({
         aria-modal="true"
         aria-labelledby="upgrade-checkout-title"
         aria-describedby={errorId ? `${dialogDescriptionId} ${errorId}` : dialogDescriptionId}
-        className="relative flex h-full w-full max-w-[560px] flex-col overflow-y-auto border-l border-(--border-interactive) bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(255,250,242,0.98))] p-6 shadow-[-28px_0_80px_rgba(31,35,33,0.18)] sm:p-7"
+        className="relative flex h-full w-full max-w-[560px] flex-col overflow-y-auto border-l border-[rgba(86,250,255,0.24)] bg-[linear-gradient(180deg,rgba(8,15,31,0.98),rgba(4,8,20,0.98))] p-6 shadow-[-28px_0_80px_rgba(0,0,0,0.45)] sm:p-7"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium uppercase tracking-[0.2em] text-(--color-muted)">
-              B2B billing
-            </p>
+            <p className="eyebrow">B2B billing</p>
             <h2
               id="upgrade-checkout-title"
-              className="mt-2 text-3xl font-semibold tracking-tight text-(--color-foreground)"
+              className="mt-4 text-3xl font-semibold tracking-tight neon-title"
             >
               Stripe sandbox subscription
             </h2>
             <p
               id={dialogDescriptionId}
-              className="mt-2 text-sm leading-6 text-(--color-muted)"
+              className="mt-3 text-sm leading-6 neon-muted-copy"
             >
               Choose the plan and seat configuration for this signed-in workspace. Checkout runs
               through Stripe sandbox, and paid workflows unlock only after webhook-confirmed
@@ -197,7 +195,7 @@ export function UpgradeCheckoutDrawer({
             type="button"
             aria-label="Close upgrade checkout drawer"
             onClick={onClose}
-            className="rounded-full border border-(--border-interactive) bg-white p-2 text-(--color-muted) transition hover:text-(--color-foreground)"
+            className="neon-button-outline rounded-full p-2 text-(--color-muted)"
           >
             <X className="h-4 w-4" />
           </button>
@@ -212,8 +210,8 @@ export function UpgradeCheckoutDrawer({
               key={item.key}
               className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
                 step === item.key
-                  ? "bg-[rgba(16,120,105,0.12)] text-(--color-accent)"
-                  : "bg-[rgba(31,35,33,0.08)] text-(--color-muted)"
+                  ? "neon-badge"
+                  : "border border-[rgba(112,132,191,0.18)] bg-[rgba(8,15,31,0.72)] text-(--color-muted)"
               }`}
             >
               {index + 1}. {item.label}
@@ -225,20 +223,18 @@ export function UpgradeCheckoutDrawer({
           <div
             id={errorId ?? undefined}
             role="alert"
-            className="mt-5 rounded-2xl border border-[rgba(191,87,70,0.28)] bg-[rgba(255,240,235,0.85)] px-4 py-3 text-sm text-(--color-danger)"
+            className="neon-alert-error mt-5 rounded-2xl px-4 py-3 text-sm"
           >
             {errorMessage}
           </div>
         ) : null}
 
-        <div className="mt-5 rounded-[28px] border border-[rgba(16,120,105,0.2)] bg-[rgba(232,247,243,0.85)] p-5">
-          <p className="text-sm font-medium uppercase tracking-[0.18em] text-(--color-accent)">
-            Account status
-          </p>
-          <p className="mt-2 text-2xl font-semibold tracking-tight text-(--color-foreground)">
+        <div className="neon-shell-soft mt-5 rounded-[28px] p-5">
+          <p className="eyebrow">Account status</p>
+          <p className="mt-3 text-2xl font-semibold tracking-tight neon-title">
             {currentStatus.label}
           </p>
-          <p className="mt-2 text-sm leading-6 text-(--color-muted)">
+          <p className="mt-2 text-sm leading-6 neon-muted-copy">
             {currentStatus.description}
           </p>
           {checkout?.displayPrice ? (
@@ -250,38 +246,23 @@ export function UpgradeCheckoutDrawer({
 
         <p className="mt-5 text-xs leading-6 text-(--color-muted)">
           Review the{" "}
-          <Link
-            href="/terms"
-            className="font-semibold text-(--color-foreground) underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-3 transition hover:text-(--color-accent)"
-          >
+          <Link href="/terms" className="neon-link font-semibold text-(--color-foreground)">
             Terms
           </Link>
           ,{" "}
-          <Link
-            href="/privacy"
-            className="font-semibold text-(--color-foreground) underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-3 transition hover:text-(--color-accent)"
-          >
+          <Link href="/privacy" className="neon-link font-semibold text-(--color-foreground)">
             Privacy Policy
           </Link>
           ,{" "}
-          <Link
-            href="/accessibility"
-            className="font-semibold text-(--color-foreground) underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-3 transition hover:text-(--color-accent)"
-          >
+          <Link href="/accessibility" className="neon-link font-semibold text-(--color-foreground)">
             Accessibility
           </Link>
           ,{" "}
-          <Link
-            href="/copyright"
-            className="font-semibold text-(--color-foreground) underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-3 transition hover:text-(--color-accent)"
-          >
+          <Link href="/copyright" className="neon-link font-semibold text-(--color-foreground)">
             Copyright
           </Link>
           , and{" "}
-          <Link
-            href="/legal"
-            className="font-semibold text-(--color-foreground) underline decoration-[color:var(--color-accent)] decoration-2 underline-offset-3 transition hover:text-(--color-accent)"
-          >
+          <Link href="/legal" className="neon-link font-semibold text-(--color-foreground)">
             Legal Notice
           </Link>
           . This flow is B2B-only and intended for Stripe sandbox MVP review.
@@ -302,8 +283,8 @@ export function UpgradeCheckoutDrawer({
                   }}
                   className={`rounded-[28px] border p-5 text-left transition ${
                     selected
-                      ? "border-(--color-accent) bg-[rgba(16,120,105,0.08)]"
-                      : "border-(--border-interactive) bg-white/80 hover:border-(--color-accent)"
+                      ? "border-(--color-accent) bg-[rgba(86,250,255,0.12)]"
+                      : "border-(--border-interactive) bg-[rgba(8,15,31,0.72)] hover:border-(--color-accent)"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -315,7 +296,7 @@ export function UpgradeCheckoutDrawer({
                         {planDescriptions[plan.planId]}
                       </p>
                     </div>
-                    <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-(--color-muted)">
+                    <span className="neon-chip rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]">
                       {plan.minSeats}-{plan.maxSeats} seats
                     </span>
                   </div>
@@ -331,7 +312,7 @@ export function UpgradeCheckoutDrawer({
             <button
               type="button"
               onClick={() => setStep("config")}
-              className="mt-2 inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-(--color-foreground) px-5 text-sm font-semibold text-(--color-background) transition hover:bg-(--color-accent)"
+              className="neon-button mt-2 inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold"
             >
               Continue to configuration
             </button>
@@ -340,14 +321,12 @@ export function UpgradeCheckoutDrawer({
 
         {step === "config" ? (
           <div className="mt-6 grid gap-5">
-            <section className="rounded-[28px] border border-(--color-border) bg-white/80 p-5">
-              <p className="text-sm font-medium uppercase tracking-[0.2em] text-(--color-muted)">
-                Plan
-              </p>
-              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-(--color-foreground)">
+            <section className="neon-shell-soft rounded-[28px] p-5">
+              <p className="eyebrow">Plan</p>
+              <h3 className="mt-3 text-2xl font-semibold tracking-tight neon-title">
                 {selectedPlan.label}
               </h3>
-              <p className="mt-2 text-sm leading-6 text-(--color-muted)">
+              <p className="mt-2 text-sm leading-6 neon-muted-copy">
                 {planDescriptions[planId]}
               </p>
             </section>
@@ -358,8 +337,8 @@ export function UpgradeCheckoutDrawer({
                 onClick={() => setBillingCycle("monthly")}
                 className={`rounded-[24px] border p-4 text-left transition ${
                   billingCycle === "monthly"
-                    ? "border-(--color-accent) bg-[rgba(16,120,105,0.08)]"
-                    : "border-(--border-interactive) bg-white/80"
+                    ? "border-(--color-accent) bg-[rgba(86,250,255,0.12)]"
+                    : "border-(--border-interactive) bg-[rgba(8,15,31,0.72)]"
                 }`}
               >
                 <p className="text-sm font-medium uppercase tracking-[0.18em] text-(--color-muted)">
@@ -374,8 +353,8 @@ export function UpgradeCheckoutDrawer({
                 onClick={() => setBillingCycle("annual")}
                 className={`rounded-[24px] border p-4 text-left transition ${
                   billingCycle === "annual"
-                    ? "border-(--color-accent) bg-[rgba(16,120,105,0.08)]"
-                    : "border-(--border-interactive) bg-white/80"
+                    ? "border-(--color-accent) bg-[rgba(86,250,255,0.12)]"
+                    : "border-(--border-interactive) bg-[rgba(8,15,31,0.72)]"
                 }`}
               >
                 <p className="text-sm font-medium uppercase tracking-[0.18em] text-(--color-muted)">
@@ -393,18 +372,16 @@ export function UpgradeCheckoutDrawer({
                 value={seats}
                 onChange={(event) => setSeats(event.target.value)}
                 inputMode="numeric"
-                className="h-12 rounded-2xl border border-(--border-interactive) bg-white/90 px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
+                className="neon-field h-12 rounded-2xl px-4 text-sm"
               />
               <span className="text-xs text-(--color-muted)">
                 {`${selectedPlan.minSeats}-${selectedPlan.maxSeats} seats supported on this plan.`}
               </span>
             </label>
 
-            <div className="rounded-[28px] border border-(--color-border) bg-[rgba(255,252,246,0.78)] p-5">
-              <p className="text-sm font-medium uppercase tracking-[0.18em] text-(--color-muted)">
-                What happens next
-              </p>
-              <ul className="mt-3 grid gap-2 text-sm leading-6 text-(--color-muted)">
+            <div className="neon-shell-soft rounded-[28px] p-5">
+              <p className="eyebrow">What happens next</p>
+              <ul className="mt-3 grid gap-2 text-sm leading-6 neon-muted-copy">
                 <li>1. You will be redirected to Stripe-hosted Checkout in sandbox mode.</li>
                 <li>2. Checkout return alone does not unlock access.</li>
                 <li>3. Paid workflows activate only after webhook-confirmed billing state.</li>
@@ -415,7 +392,7 @@ export function UpgradeCheckoutDrawer({
               <button
                 type="button"
                 onClick={() => setStep("plan")}
-                className="inline-flex h-12 items-center justify-center rounded-2xl border border-(--border-interactive) bg-white px-5 text-sm font-semibold text-(--color-foreground)"
+                className="neon-button-outline inline-flex h-12 items-center justify-center rounded-2xl px-5 text-sm font-semibold"
               >
                 Back
               </button>
@@ -423,7 +400,7 @@ export function UpgradeCheckoutDrawer({
                 type="button"
                 onClick={() => void handleStartCheckout()}
                 disabled={isStarting || !Number.isInteger(selectedSeats)}
-                className="inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl bg-(--color-foreground) px-5 text-sm font-semibold text-(--color-background) transition hover:bg-(--color-accent) disabled:cursor-not-allowed disabled:opacity-60"
+                className="neon-button inline-flex h-12 flex-1 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isStarting ? (
                   <>
@@ -442,26 +419,26 @@ export function UpgradeCheckoutDrawer({
         ) : null}
 
         {checkout?.status === "active" ? (
-          <div className="mt-6 rounded-[28px] border border-[rgba(16,120,105,0.2)] bg-[linear-gradient(135deg,rgba(16,120,105,0.1),rgba(255,255,255,0.92))] p-6">
-            <div className="inline-flex rounded-full bg-white/80 p-3 text-(--color-accent)">
+          <div className="neon-shell-soft mt-6 rounded-[28px] p-6">
+            <div className="inline-flex rounded-full border border-[rgba(86,250,255,0.16)] bg-[rgba(8,15,31,0.84)] p-3 text-(--color-accent)">
               <ShieldCheck className="h-5 w-5" />
             </div>
-            <h3 className="mt-4 text-3xl font-semibold tracking-tight text-(--color-foreground)">
+            <h3 className="mt-4 text-3xl font-semibold tracking-tight neon-title">
               Paid workflows unlocked
             </h3>
-            <p className="mt-3 text-sm leading-6 text-(--color-muted)">
+            <p className="mt-3 text-sm leading-6 neon-muted-copy">
               Durable reports, weekly tracking, and benchmarks are available for this account.
             </p>
           </div>
         ) : checkout?.status === "pending_payment" ? (
-          <div className="mt-6 rounded-[28px] border border-[rgba(16,120,105,0.2)] bg-[linear-gradient(135deg,rgba(16,120,105,0.1),rgba(255,255,255,0.92))] p-6">
-            <div className="inline-flex rounded-full bg-white/80 p-3 text-(--color-accent)">
+          <div className="neon-shell-soft mt-6 rounded-[28px] p-6">
+            <div className="inline-flex rounded-full border border-[rgba(86,250,255,0.16)] bg-[rgba(8,15,31,0.84)] p-3 text-(--color-accent)">
               <Sparkles className="h-5 w-5" />
             </div>
-            <h3 className="mt-4 text-3xl font-semibold tracking-tight text-(--color-foreground)">
+            <h3 className="mt-4 text-3xl font-semibold tracking-tight neon-title">
               Waiting for Stripe webhook
             </h3>
-            <p className="mt-3 text-sm leading-6 text-(--color-muted)">
+            <p className="mt-3 text-sm leading-6 neon-muted-copy">
               Checkout completed, but the workspace will remain locked until Stripe confirms the
               subscription payment.
             </p>

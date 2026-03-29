@@ -70,18 +70,16 @@ export function CheckoutReturnStatus() {
   }, [endpoint, isCanceled, sessionId]);
 
   return (
-    <section className="rounded-4xl border border-(--color-border) bg-white/90 p-6 shadow-[0_18px_50px_rgba(31,35,33,0.07)]">
-      <p className="text-sm font-medium uppercase tracking-[0.2em] text-(--color-muted)">
-        Checkout return
-      </p>
-      <h1 className="mt-3 text-3xl font-semibold tracking-tight text-(--color-foreground)">
+    <section className="neon-panel neon-grid rounded-[34px] p-6">
+      <p className="eyebrow">Checkout return</p>
+      <h1 className="mt-4 text-3xl font-semibold tracking-tight neon-title">
         {isCanceled
           ? "Checkout was canceled."
           : checkout?.status === "active"
             ? "Paid workflows are active."
             : "Waiting for Stripe billing confirmation."}
       </h1>
-      <p className="mt-4 text-sm leading-6 text-(--color-muted)">
+      <p className="mt-4 text-sm leading-6 neon-muted-copy">
         {isCanceled
           ? "No features were unlocked. You can return to the workspace and start a new Stripe sandbox checkout."
           : sessionId
@@ -90,13 +88,13 @@ export function CheckoutReturnStatus() {
       </p>
 
       {isLoading ? (
-        <p className="mt-4 text-sm text-(--color-muted)">Loading billing state...</p>
+        <p className="mt-4 text-sm neon-muted-copy">Loading billing state...</p>
       ) : null}
 
       {errorMessage ? (
         <div
           role="alert"
-          className="mt-4 rounded-2xl border border-[rgba(191,87,70,0.2)] bg-[rgba(255,240,235,0.85)] px-4 py-3 text-sm text-(--color-danger)"
+          className="neon-alert-error mt-4 rounded-2xl px-4 py-3 text-sm"
         >
           {errorMessage}
         </div>
@@ -104,19 +102,19 @@ export function CheckoutReturnStatus() {
 
       {checkout ? (
         <dl className="mt-6 grid gap-4 md:grid-cols-3">
-          <div className="rounded-3xl border border-(--color-border) bg-[rgba(255,252,246,0.8)] p-4">
+          <div className="neon-shell-soft rounded-3xl p-4">
             <dt className="text-sm text-(--color-muted)">Status</dt>
             <dd className="mt-2 text-lg font-semibold text-(--color-foreground)">
               {checkout.status}
             </dd>
           </div>
-          <div className="rounded-3xl border border-(--color-border) bg-[rgba(255,252,246,0.8)] p-4">
+          <div className="neon-shell-soft rounded-3xl p-4">
             <dt className="text-sm text-(--color-muted)">Plan</dt>
             <dd className="mt-2 text-lg font-semibold text-(--color-foreground)">
               {checkout.planLabel ?? "Not started"}
             </dd>
           </div>
-          <div className="rounded-3xl border border-(--color-border) bg-[rgba(255,252,246,0.8)] p-4">
+          <div className="neon-shell-soft rounded-3xl p-4">
             <dt className="text-sm text-(--color-muted)">Entitlements</dt>
             <dd className="mt-2 text-lg font-semibold text-(--color-foreground)">
               {checkout.entitlements.length}
@@ -128,7 +126,7 @@ export function CheckoutReturnStatus() {
       <div className="mt-6">
         <Link
           href="/"
-          className="inline-flex items-center rounded-full border border-(--border-interactive) bg-white px-4 py-2 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent)"
+          className="neon-button-outline inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold"
         >
           Back to workspace
         </Link>

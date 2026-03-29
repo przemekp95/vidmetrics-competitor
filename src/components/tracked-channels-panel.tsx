@@ -27,17 +27,15 @@ export function TrackedChannelsPanel({
   return (
     <section
       id="weekly-tracking"
-      className="rounded-4xl border border-(--color-border) bg-white/90 p-6 shadow-[0_18px_50px_rgba(31,35,33,0.07)]"
+      className="neon-panel rounded-[34px] p-6"
     >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-(--color-muted)">
-            Paid workflow
-          </p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-(--color-foreground)">
+          <p className="eyebrow">Paid workflow</p>
+          <h2 className="mt-4 text-2xl font-semibold tracking-tight neon-title">
             Weekly tracking
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-(--color-muted)">
+          <p className="mt-3 max-w-2xl text-sm leading-6 neon-muted-copy">
             Pin channels to the account and manually refresh them from the latest workspace
             analysis. No cron automation in this MVP.
           </p>
@@ -48,7 +46,7 @@ export function TrackedChannelsPanel({
             type="button"
             onClick={() => void onTrackCurrentChannel()}
             disabled={isSaving || !analysis}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-(--color-foreground) px-5 text-sm font-semibold text-(--color-background) transition hover:bg-(--color-accent) disabled:cursor-not-allowed disabled:opacity-60"
+            className="neon-button inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving ? (
               <>
@@ -66,7 +64,7 @@ export function TrackedChannelsPanel({
           <button
             type="button"
             onClick={onOpenCheckout}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent)"
+            className="neon-button-outline inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold"
           >
             <Lock className="h-4 w-4" />
             Upgrade to unlock
@@ -75,7 +73,7 @@ export function TrackedChannelsPanel({
       </div>
 
       {!isEnabled ? (
-        <div className="mt-6 rounded-3xl border border-dashed border-(--border-interactive) bg-[rgba(255,252,246,0.74)] p-5 text-sm leading-6 text-(--color-muted)">
+        <div className="neon-empty-state mt-6 rounded-3xl p-5 text-sm leading-6 neon-muted-copy">
           Activate the paid plan to persist tracked channels and refresh them across sessions.
         </div>
       ) : isLoading ? (
@@ -83,16 +81,16 @@ export function TrackedChannelsPanel({
           {Array.from({ length: 2 }).map((_, index) => (
             <div
               key={index}
-              className="animate-pulse rounded-3xl border border-(--color-border) bg-[rgba(255,252,246,0.72)] p-5"
+              className="rounded-3xl border border-(--color-border) bg-[rgba(8,15,31,0.48)] p-5"
             >
-              <div className="h-3 w-20 rounded-full bg-[rgba(31,35,33,0.08)]" />
-              <div className="mt-4 h-6 w-3/4 rounded-full bg-[rgba(31,35,33,0.08)]" />
-              <div className="mt-3 h-3 w-1/2 rounded-full bg-[rgba(31,35,33,0.08)]" />
+              <div className="neon-skeleton h-3 w-20 rounded-full" />
+              <div className="neon-skeleton mt-4 h-6 w-3/4 rounded-full" />
+              <div className="neon-skeleton mt-3 h-3 w-1/2 rounded-full" />
             </div>
           ))}
         </div>
       ) : trackedChannels.length === 0 ? (
-        <div className="mt-6 rounded-3xl border border-dashed border-(--color-border) bg-[rgba(255,252,246,0.72)] p-5 text-sm leading-6 text-(--color-muted)">
+        <div className="neon-empty-state mt-6 rounded-3xl p-5 text-sm leading-6 neon-muted-copy">
           Analyze a channel and pin it here to start a manual weekly tracking list.
         </div>
       ) : (
@@ -100,7 +98,7 @@ export function TrackedChannelsPanel({
           {trackedChannels.map((trackedChannel) => (
             <article
               key={trackedChannel.trackedChannelId}
-              className="rounded-3xl border border-(--color-border) bg-[rgba(255,252,246,0.78)] p-5"
+              className="neon-shell-soft rounded-3xl p-5"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
@@ -120,7 +118,7 @@ export function TrackedChannelsPanel({
                     </p>
                   </div>
                 </div>
-                <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-(--color-accent)">
+                <span className="neon-badge rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]">
                   <CalendarRange className="h-3.5 w-3.5" />
                   Tracked
                 </span>

@@ -12,7 +12,7 @@ function getStatusTone(status: UpgradeCheckoutReadModel["status"] | null | undef
         "Stripe sandbox checkout and webhook confirmation succeeded. Durable reports, tracking, and benchmarks are now available.",
       icon: <BadgeCheck className="h-4 w-4" />,
       theme:
-        "border-[rgba(16,120,105,0.2)] bg-[linear-gradient(135deg,rgba(16,120,105,0.14),rgba(255,255,255,0.94))]",
+        "from-[rgba(54,255,201,0.18)] via-[rgba(86,250,255,0.12)] to-transparent",
     };
   }
 
@@ -24,7 +24,7 @@ function getStatusTone(status: UpgradeCheckoutReadModel["status"] | null | undef
         "Checkout may have started or completed, but paid workflows stay locked until the Stripe webhook confirms subscription billing.",
       icon: <CreditCard className="h-4 w-4" />,
       theme:
-        "border-[rgba(211,141,28,0.24)] bg-[linear-gradient(135deg,rgba(255,246,219,0.94),rgba(255,255,255,0.94))]",
+        "from-[rgba(255,99,216,0.12)] via-[rgba(140,99,255,0.12)] to-transparent",
     };
   }
 
@@ -36,7 +36,7 @@ function getStatusTone(status: UpgradeCheckoutReadModel["status"] | null | undef
         "Paid workflows are locked until a new successful Stripe billing cycle reactivates the account.",
       icon: <AlertTriangle className="h-4 w-4" />,
       theme:
-        "border-[rgba(191,87,70,0.22)] bg-[linear-gradient(135deg,rgba(255,240,235,0.92),rgba(255,255,255,0.94))]",
+        "from-[rgba(255,107,147,0.16)] via-[rgba(140,99,255,0.1)] to-transparent",
     };
   }
 
@@ -46,7 +46,7 @@ function getStatusTone(status: UpgradeCheckoutReadModel["status"] | null | undef
     description:
       "Use Stripe sandbox checkout to activate durable reports, weekly tracking, and benchmarks for the signed-in account.",
     icon: <Sparkles className="h-4 w-4" />,
-    theme: "border-(--color-border) bg-white/90",
+    theme: "from-[rgba(86,250,255,0.12)] via-transparent to-transparent",
   };
 }
 
@@ -62,23 +62,22 @@ export function UpgradeActivationCard({
   return (
     <section
       id="billing"
-      className={`rounded-[32px] border p-6 shadow-[0_18px_50px_rgba(31,35,33,0.07)] ${statusTone.theme}`}
+      className="neon-panel relative overflow-hidden rounded-[32px] p-6"
     >
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${statusTone.theme}`} />
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="max-w-3xl">
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-[color:var(--color-muted)]">
-            Billing
-          </p>
+        <div className="relative max-w-3xl">
+          <p className="eyebrow">Billing</p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <h2 className="text-3xl font-semibold tracking-tight text-[color:var(--color-foreground)]">
+            <h2 className="text-3xl font-semibold tracking-tight neon-title">
               {statusTone.title}
             </h2>
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-[color:var(--color-accent)]">
+            <span className="neon-badge rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em]">
               {statusTone.icon}
               {statusTone.badge}
             </span>
           </div>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-[color:var(--color-muted)]">
+          <p className="mt-3 max-w-2xl text-sm leading-6 neon-muted-copy">
             {statusTone.description}
           </p>
         </div>
@@ -86,15 +85,15 @@ export function UpgradeActivationCard({
         <button
           type="button"
           onClick={onOpenCheckout}
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--border-interactive) bg-white px-5 text-sm font-semibold text-[color:var(--color-foreground)] transition hover:border-[color:var(--color-accent)] hover:text-[color:var(--color-accent)]"
+          className="neon-button-outline relative inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold"
         >
           <CreditCard className="h-4 w-4" />
           {checkout?.status === "active" ? "Manage billing state" : "Open checkout"}
         </button>
       </div>
 
-      <dl className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-[24px] border border-(--color-border) bg-white/75 p-4">
+      <dl className="relative mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="neon-shell-soft rounded-[24px] p-4">
           <dt className="text-sm text-[color:var(--color-muted)]">Plan</dt>
           <dd className="mt-2 text-lg font-semibold text-[color:var(--color-foreground)]">
             {checkout?.planLabel ?? "Explorer"}
@@ -103,7 +102,7 @@ export function UpgradeActivationCard({
             {checkout?.displayPrice ?? "No Stripe checkout started yet"}
           </p>
         </div>
-        <div className="rounded-[24px] border border-(--color-border) bg-white/75 p-4">
+        <div className="neon-shell-soft rounded-[24px] p-4">
           <dt className="text-sm text-[color:var(--color-muted)]">Entitlements</dt>
           <dd className="mt-2 text-lg font-semibold text-[color:var(--color-foreground)]">
             {checkout?.entitlements.length ?? 0}
@@ -114,7 +113,7 @@ export function UpgradeActivationCard({
               : "Paid workflows locked"}
           </p>
         </div>
-        <div className="rounded-[24px] border border-(--color-border) bg-white/75 p-4">
+        <div className="neon-shell-soft rounded-[24px] p-4">
           <dt className="text-sm text-[color:var(--color-muted)]">Checkout completed</dt>
           <dd className="mt-2 text-lg font-semibold text-[color:var(--color-foreground)]">
             {checkout?.checkoutCompletedAt ? formatDateTime(checkout.checkoutCompletedAt) : "Not yet"}
@@ -123,7 +122,7 @@ export function UpgradeActivationCard({
             Hosted checkout does not unlock access by itself.
           </p>
         </div>
-        <div className="rounded-[24px] border border-(--color-border) bg-white/75 p-4">
+        <div className="neon-shell-soft rounded-[24px] p-4">
           <dt className="text-sm text-[color:var(--color-muted)]">Last paid</dt>
           <dd className="mt-2 text-lg font-semibold text-[color:var(--color-foreground)]">
             {checkout?.lastPaidAt ? formatDateTime(checkout.lastPaidAt) : "Awaiting payment"}

@@ -675,7 +675,7 @@ export function CompetitorAnalysisWorkspace() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-360 flex-col gap-10 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
+    <main className="relative z-10 mx-auto flex min-h-screen w-full max-w-360 flex-col gap-10 px-4 py-6 sm:px-6 lg:px-10 lg:py-10">
       <SaasShellHeader
         planLabel={shellPlanLabel}
         statusLabel={shellStatusLabel}
@@ -687,26 +687,26 @@ export function CompetitorAnalysisWorkspace() {
 
       <section
         id="overview"
-        className="overflow-hidden rounded-[40px] border border-(--color-border) bg-[radial-gradient(circle_at_top_left,rgba(16,120,105,0.16),transparent_36%),linear-gradient(135deg,rgba(255,255,255,0.94),rgba(255,249,239,0.96))] px-6 py-8 shadow-[0_24px_70px_rgba(31,35,33,0.09)] sm:px-8 lg:px-10 lg:py-10"
+        className="neon-panel neon-grid overflow-hidden rounded-[40px] px-6 py-8 sm:px-8 lg:px-10 lg:py-10"
       >
         <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
-            <p className="inline-flex rounded-full border border-[rgba(16,120,105,0.18)] bg-[rgba(255,255,255,0.8)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-(--color-accent)">
+            <p className="neon-badge inline-flex rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em]">
               VidMetrics Competitor Pulse
             </p>
-            <h1 className="mt-6 text-3xl font-semibold tracking-[-0.04em] text-(--color-foreground) sm:text-5xl lg:text-6xl">
+            <h1 className="mt-6 text-3xl font-semibold tracking-[-0.04em] neon-title sm:text-5xl lg:text-6xl">
               See which competitor videos are winning this month.
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-(--color-muted) sm:text-lg">
+            <p className="mt-5 max-w-2xl text-base leading-7 neon-muted-copy sm:text-lg">
               Paste a YouTube channel URL to analyze current-month uploads, then move from free
               session snapshots into paid saved reports, weekly tracking, and Stripe-backed billing
               activation.
             </p>
           </div>
 
-          <div className="grid gap-3 rounded-[28px] border border-(--color-border) bg-white/75 p-5 text-sm text-(--color-muted) lg:max-w-sm">
+          <div className="neon-shell-soft grid gap-3 rounded-[28px] p-5 text-sm neon-muted-copy lg:max-w-sm">
             <div className="flex items-center gap-3">
-              <div className="rounded-full bg-[rgba(16,120,105,0.12)] p-2 text-(--color-accent)">
+              <div className="rounded-full border border-[rgba(86,250,255,0.18)] bg-[rgba(8,15,31,0.82)] p-2 text-(--color-accent)">
                 <Search className="h-4 w-4" />
               </div>
               <p className="font-medium text-(--color-foreground)">
@@ -722,7 +722,7 @@ export function CompetitorAnalysisWorkspace() {
 
         <form
           onSubmit={handleSubmit}
-          className="mt-8 rounded-4xl border border-(--color-border) bg-[rgba(255,255,255,0.88)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.4)] sm:p-5"
+          className="neon-shell-soft mt-8 rounded-[32px] p-4 sm:p-5"
         >
           <div className="flex flex-col gap-3 xl:flex-row">
             <label className="flex-1">
@@ -731,13 +731,13 @@ export function CompetitorAnalysisWorkspace() {
                 value={channelUrl}
                 onChange={(event) => setChannelUrl(event.target.value)}
                 placeholder="https://www.youtube.com/@channelname"
-                className="h-14 w-full rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-5 text-base text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
+                className="neon-field h-14 w-full rounded-2xl px-5 text-base"
               />
             </label>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex h-14 items-center justify-center gap-3 rounded-2xl bg-(--color-foreground) px-6 text-sm font-semibold text-(--color-background) transition hover:bg-(--color-accent) disabled:cursor-not-allowed disabled:opacity-70"
+              className="neon-button inline-flex h-14 items-center justify-center gap-3 rounded-2xl px-6 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? (
                 <>
@@ -762,7 +762,7 @@ export function CompetitorAnalysisWorkspace() {
                   setChannelUrl(sample);
                   void runAnalysis(sample);
                 }}
-                className="rounded-full border border-(--border-interactive) bg-white px-3 py-2 text-xs font-medium text-(--color-muted) transition hover:border-(--color-accent) hover:text-(--color-accent)"
+                className="neon-button-outline rounded-full px-3 py-2 text-xs font-medium neon-muted-copy"
               >
                 Try {sample.replace("https://www.youtube.com/", "")}
               </button>
@@ -772,7 +772,7 @@ export function CompetitorAnalysisWorkspace() {
           {errorMessage ? (
             <div
               role="alert"
-              className="mt-4 rounded-2xl border border-[rgba(191,87,70,0.2)] bg-[rgba(255,240,235,0.85)] px-4 py-3 text-sm text-(--color-danger)"
+              className="neon-alert-error mt-4 rounded-2xl px-4 py-3 text-sm"
             >
               {errorMessage}
             </div>
@@ -792,34 +792,32 @@ export function CompetitorAnalysisWorkspace() {
       <UpgradePromptBanner source={visibleUpgradePromptSource} onOpenCheckout={handleOpenCheckout} />
 
       <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <article className="rounded-4xl border border-(--color-border) bg-white/85 p-6 shadow-[0_18px_50px_rgba(31,35,33,0.07)]">
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-(--color-muted)">
-            What you get
-          </p>
+        <article className="neon-panel rounded-[34px] p-6">
+          <p className="eyebrow">What you get</p>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             <div>
-              <p className="text-2xl font-semibold tracking-tight text-(--color-foreground)">
+              <p className="text-2xl font-semibold tracking-tight neon-title">
                 Velocity-first
               </p>
-              <p className="mt-2 text-sm leading-6 text-(--color-muted)">
+              <p className="mt-2 text-sm leading-6 neon-muted-copy">
                 Default ranking surfaces videos gathering views fastest right now, not only the
                 biggest back-catalog hits.
               </p>
             </div>
             <div>
-              <p className="text-2xl font-semibold tracking-tight text-(--color-foreground)">
+              <p className="text-2xl font-semibold tracking-tight neon-title">
                 Client-ready
               </p>
-              <p className="mt-2 text-sm leading-6 text-(--color-muted)">
+              <p className="mt-2 text-sm leading-6 neon-muted-copy">
                 Summary cards, chart, filters, export, and storage workflows are built for strategy
                 calls, not just developer inspection.
               </p>
             </div>
             <div>
-              <p className="text-2xl font-semibold tracking-tight text-(--color-foreground)">
+              <p className="text-2xl font-semibold tracking-tight neon-title">
                 Paid workflow
               </p>
-              <p className="mt-2 text-sm leading-6 text-(--color-muted)">
+              <p className="mt-2 text-sm leading-6 neon-muted-copy">
                 Stripe sandbox checkout and webhook-confirmed activation gate the durable account
                 workflows behind a real billing state.
               </p>
@@ -827,11 +825,9 @@ export function CompetitorAnalysisWorkspace() {
           </div>
         </article>
 
-        <article className="rounded-4xl border border-(--color-border) bg-[linear-gradient(135deg,rgba(255,255,255,0.92),rgba(255,244,219,0.92))] p-6 shadow-[0_18px_50px_rgba(31,35,33,0.07)]">
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-(--color-muted)">
-            Workspace workflow
-          </p>
-          <ul className="mt-5 space-y-4 text-sm leading-6 text-(--color-muted)">
+        <article className="neon-shell-soft rounded-[34px] p-6">
+          <p className="eyebrow">Workspace workflow</p>
+          <ul className="mt-5 space-y-4 text-sm leading-6 neon-muted-copy">
             <li>Paste a channel, analyze current-month uploads, and rank them by momentum.</li>
             <li>Save a free session snapshot or export the filtered shortlist immediately.</li>
             <li>Upgrade the account to persist saved reports, weekly tracking, and benchmarks.</li>
@@ -844,17 +840,17 @@ export function CompetitorAnalysisWorkspace() {
           {Array.from({ length: 4 }).map((_, index) => (
             <div
               key={index}
-              className="animate-pulse rounded-[28px] border border-(--color-border) bg-white/80 p-5 shadow-[0_18px_50px_rgba(31,35,33,0.05)]"
+              className="neon-stat-card rounded-[28px] p-5"
             >
-              <div className="h-3 w-24 rounded-full bg-[rgba(31,35,33,0.08)]" />
-              <div className="mt-4 h-8 w-3/4 rounded-full bg-[rgba(31,35,33,0.08)]" />
-              <div className="mt-3 h-3 w-1/2 rounded-full bg-[rgba(31,35,33,0.08)]" />
+              <div className="neon-skeleton h-3 w-24 rounded-full" />
+              <div className="neon-skeleton mt-4 h-8 w-3/4 rounded-full" />
+              <div className="neon-skeleton mt-3 h-3 w-1/2 rounded-full" />
             </div>
           ))}
         </section>
       ) : analysis ? (
         <>
-          <section className="rounded-4xl border border-(--color-border) bg-white/88 p-6 shadow-[0_18px_50px_rgba(31,35,33,0.07)]">
+          <section className="neon-panel rounded-[34px] p-6">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex items-center gap-4">
                 <Image
@@ -869,7 +865,7 @@ export function CompetitorAnalysisWorkspace() {
                     <h2 className="text-2xl font-semibold tracking-tight text-(--color-foreground)">
                       {analysis.channel.title}
                     </h2>
-                    <span className="rounded-full bg-[rgba(16,120,105,0.12)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-(--color-accent)">
+                    <span className="neon-badge rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]">
                       {analysis.window.label}
                     </span>
                   </div>
@@ -885,7 +881,7 @@ export function CompetitorAnalysisWorkspace() {
                   type="button"
                   onClick={handleSaveSnapshot}
                   disabled={isSavingSnapshot}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--border-interactive) bg-white px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent) disabled:cursor-not-allowed disabled:opacity-60"
+                  className="neon-button-outline inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSavingSnapshot ? (
                     <>
@@ -905,7 +901,7 @@ export function CompetitorAnalysisWorkspace() {
                     type="button"
                     onClick={() => void handleSaveSavedReport()}
                     disabled={isSavingSavedReport}
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.9)] px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent) disabled:cursor-not-allowed disabled:opacity-60"
+                    className="neon-button-outline inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isSavingSavedReport ? (
                       <>
@@ -923,7 +919,7 @@ export function CompetitorAnalysisWorkspace() {
                   <button
                     type="button"
                     onClick={handleOpenCheckout}
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-dashed border-(--border-interactive) bg-[rgba(255,252,246,0.9)] px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent)"
+                    className="neon-button-outline inline-flex h-12 items-center justify-center gap-2 rounded-2xl border-dashed px-5 text-sm font-semibold"
                   >
                     <Lock className="h-4 w-4" />
                     Unlock durable reports
@@ -935,7 +931,7 @@ export function CompetitorAnalysisWorkspace() {
                     type="button"
                     onClick={() => void handleTrackCurrentChannel()}
                     disabled={isSavingTrackedChannel}
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.9)] px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent) disabled:cursor-not-allowed disabled:opacity-60"
+                    className="neon-button-outline inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isSavingTrackedChannel ? (
                       <>
@@ -953,7 +949,7 @@ export function CompetitorAnalysisWorkspace() {
                   <button
                     type="button"
                     onClick={handleOpenCheckout}
-                    className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-dashed border-(--border-interactive) bg-[rgba(255,252,246,0.9)] px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent)"
+                    className="neon-button-outline inline-flex h-12 items-center justify-center gap-2 rounded-2xl border-dashed px-5 text-sm font-semibold"
                   >
                     <Lock className="h-4 w-4" />
                     Unlock tracking
@@ -964,7 +960,7 @@ export function CompetitorAnalysisWorkspace() {
                   type="button"
                   onClick={handleExportCsv}
                   disabled={filteredVideos.length === 0}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.9)] px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent) disabled:cursor-not-allowed disabled:opacity-60"
+                  className="neon-button-outline inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Download className="h-4 w-4" />
                   Export filtered CSV
@@ -975,17 +971,15 @@ export function CompetitorAnalysisWorkspace() {
 
           <PerformanceSummaryCards analysis={analysis} />
 
-          <section className="rounded-4xl border border-(--color-border) bg-white/88 p-5 shadow-[0_18px_50px_rgba(31,35,33,0.07)]">
+          <section className="neon-panel rounded-[34px] p-5">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div>
-                <p className="text-sm font-medium uppercase tracking-[0.2em] text-(--color-muted)">
-                  Filters
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-(--color-foreground)">
+                <p className="eyebrow">Filters</p>
+                <h2 className="mt-4 text-2xl font-semibold tracking-tight neon-title">
                   Refine the shortlist
                 </h2>
               </div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-[rgba(31,35,33,0.05)] px-4 py-2 text-xs font-medium uppercase tracking-[0.16em] text-(--color-muted)">
+              <div className="neon-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium uppercase tracking-[0.16em]">
                 <SlidersHorizontal className="h-3.5 w-3.5" />
                 {filteredVideos.length} of {analysis.videos.length} videos visible
               </div>
@@ -998,7 +992,7 @@ export function CompetitorAnalysisWorkspace() {
                   value={searchTerm}
                   onChange={(event) => setSearchTerm(event.target.value)}
                   placeholder="Find a headline"
-                  className="h-12 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
+                  className="neon-field h-12 rounded-2xl px-4 text-sm"
                 />
               </label>
 
@@ -1007,7 +1001,7 @@ export function CompetitorAnalysisWorkspace() {
                 <select
                   value={sortKey}
                   onChange={(event) => setSortKey(event.target.value as SortKey)}
-                  className="h-12 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
+                  className="neon-field h-12 rounded-2xl px-4 text-sm"
                 >
                   <option value="momentum">Views / day</option>
                   <option value="views">Total views</option>
@@ -1024,7 +1018,7 @@ export function CompetitorAnalysisWorkspace() {
                   onChange={(event) => setMinViews(event.target.value)}
                   inputMode="numeric"
                   placeholder="e.g. 25000"
-                  className="h-12 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
+                  className="neon-field h-12 rounded-2xl px-4 text-sm"
                 />
               </label>
 
@@ -1034,7 +1028,7 @@ export function CompetitorAnalysisWorkspace() {
                   <select
                     value={trendFilter}
                     onChange={(event) => setTrendFilter(event.target.value as TrendFilter)}
-                    className="h-12 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
+                    className="neon-field h-12 rounded-2xl px-4 text-sm"
                   >
                     <option value="all">All trends</option>
                     <option value="hot">Hot</option>
@@ -1048,7 +1042,7 @@ export function CompetitorAnalysisWorkspace() {
                   <select
                     value={durationFilter}
                     onChange={(event) => setDurationFilter(event.target.value as DurationFilter)}
-                    className="h-12 rounded-2xl border border-(--border-interactive) bg-[rgba(255,252,246,0.92)] px-4 text-sm text-(--color-foreground) outline-none transition focus:border-(--color-accent) focus:ring-4 focus:ring-[rgba(16,120,105,0.12)]"
+                    className="neon-field h-12 rounded-2xl px-4 text-sm"
                   >
                     <option value="all">All lengths</option>
                     <option value="under10">Under 10 min</option>
@@ -1064,49 +1058,47 @@ export function CompetitorAnalysisWorkspace() {
           <VideoResults videos={filteredVideos} />
         </>
       ) : (
-        <section className="rounded-4xl border border-dashed border-(--color-border) bg-white/70 p-10 text-center shadow-[0_18px_50px_rgba(31,35,33,0.05)]">
-          <p className="text-sm font-medium uppercase tracking-[0.2em] text-(--color-muted)">
-            Ready when you are
-          </p>
-          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-(--color-foreground)">
+        <section className="neon-empty-state rounded-[34px] p-10 text-center">
+          <p className="eyebrow justify-center">Ready when you are</p>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight neon-title">
             Paste a channel to generate a live competitor snapshot.
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-(--color-muted)">
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-7 neon-muted-copy">
             You&apos;ll get summary cards, a velocity chart, a sortable video table, free session
             snapshots, and paid workflow surfaces that unlock through Stripe sandbox checkout.
           </p>
           <div className="mt-8 grid gap-4 md:grid-cols-3">
-            <div className="rounded-3xl border border-(--color-border) bg-[rgba(255,252,246,0.85)] p-5 text-left">
-              <p className="text-sm font-medium uppercase tracking-[0.2em] text-(--color-muted)">
+            <div className="neon-shell-soft rounded-3xl p-5 text-left">
+              <p className="eyebrow">
                 1
               </p>
-              <p className="mt-3 text-xl font-semibold tracking-tight text-(--color-foreground)">
+              <p className="mt-3 text-xl font-semibold tracking-tight neon-title">
                 Resolve the channel
               </p>
-              <p className="mt-2 text-sm leading-6 text-(--color-muted)">
+              <p className="mt-2 text-sm leading-6 neon-muted-copy">
                 Supports handle, canonical channel, username, and best-effort legacy custom URLs.
               </p>
             </div>
-            <div className="rounded-3xl border border-(--color-border) bg-[rgba(255,252,246,0.85)] p-5 text-left">
-              <p className="text-sm font-medium uppercase tracking-[0.2em] text-(--color-muted)">
+            <div className="neon-shell-soft rounded-3xl p-5 text-left">
+              <p className="eyebrow">
                 2
               </p>
-              <p className="mt-3 text-xl font-semibold tracking-tight text-(--color-foreground)">
+              <p className="mt-3 text-xl font-semibold tracking-tight neon-title">
                 Analyze current-month uploads
               </p>
-              <p className="mt-2 text-sm leading-6 text-(--color-muted)">
+              <p className="mt-2 text-sm leading-6 neon-muted-copy">
                 Rank videos by views per day while preserving raw view, comment, and engagement
                 context.
               </p>
             </div>
-            <div className="rounded-3xl border border-(--color-border) bg-[rgba(255,252,246,0.85)] p-5 text-left">
-              <p className="text-sm font-medium uppercase tracking-[0.2em] text-(--color-muted)">
+            <div className="neon-shell-soft rounded-3xl p-5 text-left">
+              <p className="eyebrow">
                 3
               </p>
-              <p className="mt-3 text-xl font-semibold tracking-tight text-(--color-foreground)">
+              <p className="mt-3 text-xl font-semibold tracking-tight neon-title">
                 Activate paid workflows
               </p>
-              <p className="mt-2 text-sm leading-6 text-(--color-muted)">
+              <p className="mt-2 text-sm leading-6 neon-muted-copy">
                 Move from one-off analysis into durable saved reports, weekly tracking, and
                 benchmarks after Stripe confirms billing.
               </p>
@@ -1115,7 +1107,7 @@ export function CompetitorAnalysisWorkspace() {
           <button
             type="button"
             onClick={handleOpenCheckout}
-            className="mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-(--border-interactive) bg-white px-5 text-sm font-semibold text-(--color-foreground) transition hover:border-(--color-accent) hover:text-(--color-accent)"
+            className="neon-button-outline mt-8 inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-semibold"
           >
             Open pricing workflow
             <ArrowUpRight className="h-4 w-4" />
@@ -1127,10 +1119,10 @@ export function CompetitorAnalysisWorkspace() {
         <section
           role={statusMessage.tone === "success" ? "status" : "alert"}
           aria-live={statusMessage.tone === "success" ? "polite" : "assertive"}
-          className={`rounded-3xl border px-4 py-3 text-sm ${
+          className={`rounded-3xl px-4 py-3 text-sm ${
             statusMessage.tone === "success"
-              ? "border-[rgba(16,120,105,0.2)] bg-[rgba(232,247,243,0.9)] text-(--color-accent)"
-              : "border-[rgba(191,87,70,0.2)] bg-[rgba(255,240,235,0.85)] text-(--color-danger)"
+              ? "neon-alert-success"
+              : "neon-alert-error"
           }`}
         >
           {statusMessage.text}
@@ -1188,7 +1180,7 @@ export function CompetitorAnalysisWorkspace() {
         onStartCheckout={handleStartCheckout}
       />
 
-      <footer className="flex flex-col gap-3 pb-8 text-sm text-(--color-muted)">
+      <footer className="flex flex-col gap-3 pb-8 text-sm neon-muted-copy">
         <p>
           Built for B2B MVP review. Rankings reflect public YouTube data only, and paid workflows
           depend on Stripe sandbox billing state rather than local mock activation.

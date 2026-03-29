@@ -1,6 +1,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
+import { VisualRoot } from "@/components/visual-system/visual-root";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -37,7 +38,7 @@ export default function RootLayout({
           signInForceRedirectUrl="/"
           signUpForceRedirectUrl="/"
         >
-          {children}
+          <VisualRoot>{children}</VisualRoot>
         </ClerkProvider>
       </body>
     </html>

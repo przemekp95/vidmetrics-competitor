@@ -1,17 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4efe6;
-  --foreground: #1f2321;
-  --foreground-soft: #5a625b;
-  --muted: #6d746a;
-  --surface: #fffaf1;
-  --border-subtle: #d8d0c2;
-  --border-interactive: #7c847a;
-  --accent: #107869;
-  --sun: #d38d1c;
-  --sun-deep: #9c680f;
-  --danger: #bf5746;
+  --background: #040814;
+  --foreground: #f6fbff;
+  --foreground-soft: #c2d0ef;
+  --muted: #8ea0c9;
+  --surface: rgba(10, 16, 31, 0.82);
+  --border-subtle: rgba(112, 132, 191, 0.22);
+  --border-interactive: rgba(86, 250, 255, 0.44);
+  --accent: #56faff;
+  --sun: #ff63d8;
+  --sun-deep: #ff9ce9;
+  --danger: #ff6b93;
+  --panel-bg: linear-gradient(180deg, rgba(10, 16, 31, 0.86), rgba(5, 10, 22, 0.86));
+  --panel-strong: linear-gradient(180deg, rgba(16, 24, 48, 0.92), rgba(6, 12, 24, 0.92));
+  --panel-muted: rgba(10, 16, 31, 0.62);
+  --panel-border: rgba(104, 124, 183, 0.26);
+  --panel-highlight: rgba(86, 250, 255, 0.18);
+  --panel-glow: 0 0 0 1px rgba(86, 250, 255, 0.08), 0 20px 60px rgba(5, 10, 22, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --button-shadow: 0 12px 30px rgba(24, 239, 255, 0.15);
+  --chart-cyan: #56faff;
+  --chart-magenta: #ff63d8;
+  --chart-violet: #8c63ff;
+  --chart-green: #36ffc9;
+  --motion-slow: 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-fast: 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
@@ -37,8 +51,9 @@
 
 html {
   background:
-    radial-gradient(circle at top left, rgba(16, 120, 105, 0.1), transparent 28%),
-    radial-gradient(circle at top right, rgba(211, 141, 28, 0.12), transparent 22%),
+    radial-gradient(circle at 12% 16%, rgba(86, 250, 255, 0.18), transparent 24%),
+    radial-gradient(circle at 84% 12%, rgba(255, 99, 216, 0.14), transparent 28%),
+    radial-gradient(circle at 70% 76%, rgba(140, 99, 255, 0.16), transparent 30%),
     var(--background);
 }
 
@@ -47,6 +62,10 @@ body {
   color: var(--foreground);
   font-family: var(--font-space-grotesk), sans-serif;
   text-rendering: optimizeLegibility;
+  background-image:
+    linear-gradient(rgba(86, 250, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(86, 250, 255, 0.04) 1px, transparent 1px);
+  background-size: 96px 96px;
 }
 
 a {
@@ -59,5 +78,256 @@ img {
 }
 
 ::selection {
-  background: rgba(16, 120, 105, 0.18);
+  background: rgba(86, 250, 255, 0.3);
+  color: #04111a;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(180deg, rgba(4, 8, 20, 0.1), rgba(4, 8, 20, 0.5)),
+    radial-gradient(circle at center, rgba(255, 255, 255, 0.04), transparent 48%);
+  mix-blend-mode: screen;
+}
+
+.neon-shell {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  box-shadow: var(--panel-glow);
+  backdrop-filter: blur(24px);
+}
+
+.neon-shell-strong {
+  background: var(--panel-strong);
+}
+
+.neon-shell-soft {
+  border: 1px solid rgba(86, 250, 255, 0.14);
+  background: var(--panel-muted);
+  box-shadow: 0 18px 50px rgba(5, 10, 22, 0.35);
+  backdrop-filter: blur(20px);
+}
+
+.neon-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  box-shadow: var(--panel-glow);
+  backdrop-filter: blur(24px);
+}
+
+.neon-panel::before,
+.neon-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 18%);
+}
+
+.neon-grid {
+  position: relative;
+}
+
+.neon-grid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(86, 250, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(86, 250, 255, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.8), transparent 90%);
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.26em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.neon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(86, 250, 255, 0.18);
+  background: rgba(6, 16, 31, 0.72);
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.neon-button {
+  border: 1px solid rgba(86, 250, 255, 0.3);
+  background:
+    linear-gradient(135deg, rgba(86, 250, 255, 0.18), rgba(124, 58, 237, 0.22)),
+    rgba(8, 15, 31, 0.92);
+  color: var(--foreground);
+  box-shadow: var(--button-shadow);
+  transition:
+    transform var(--motion-fast),
+    border-color var(--motion-fast),
+    box-shadow var(--motion-fast),
+    background var(--motion-fast);
+}
+
+.neon-button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(86, 250, 255, 0.6);
+  box-shadow:
+    0 0 0 1px rgba(86, 250, 255, 0.2),
+    0 20px 40px rgba(24, 239, 255, 0.18);
+}
+
+.neon-button-outline {
+  border: 1px solid rgba(86, 250, 255, 0.24);
+  background: rgba(8, 15, 31, 0.68);
+  color: var(--foreground);
+  transition:
+    transform var(--motion-fast),
+    border-color var(--motion-fast),
+    background var(--motion-fast);
+}
+
+.neon-button-outline:hover {
+  transform: translateY(-1px);
+  border-color: rgba(86, 250, 255, 0.48);
+  background: rgba(12, 20, 41, 0.88);
+}
+
+.neon-field {
+  border: 1px solid rgba(86, 250, 255, 0.22);
+  background: rgba(8, 15, 31, 0.72);
+  color: var(--foreground);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition:
+    border-color var(--motion-fast),
+    box-shadow var(--motion-fast),
+    background var(--motion-fast);
+}
+
+.neon-field:focus-visible {
+  border-color: rgba(86, 250, 255, 0.68);
+  box-shadow:
+    0 0 0 4px rgba(86, 250, 255, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  outline: none;
+}
+
+.neon-muted-copy {
+  color: var(--muted);
+}
+
+.neon-title {
+  color: var(--foreground);
+  text-wrap: balance;
+}
+
+.neon-divider {
+  border-color: rgba(112, 132, 191, 0.22);
+}
+
+.neon-table-row {
+  border-color: rgba(112, 132, 191, 0.18);
+  transition: background var(--motion-fast);
+}
+
+.neon-table-row:hover {
+  background: rgba(86, 250, 255, 0.06);
+}
+
+.neon-empty-state {
+  border: 1px dashed rgba(86, 250, 255, 0.24);
+  background: rgba(8, 15, 31, 0.52);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.neon-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(86, 250, 255, 0.18);
+  background: rgba(8, 15, 31, 0.62);
+  color: var(--muted);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.neon-stat-card {
+  border: 1px solid rgba(112, 132, 191, 0.22);
+  background: linear-gradient(180deg, rgba(12, 20, 41, 0.88), rgba(8, 15, 31, 0.72));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 16px 40px rgba(3, 7, 19, 0.35);
+}
+
+.neon-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: rgba(86, 250, 255, 0.88);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.28em;
+  transition:
+    color var(--motion-fast),
+    opacity var(--motion-fast);
+}
+
+.neon-link:hover {
+  opacity: 0.82;
+}
+
+.neon-alert-success {
+  border: 1px solid rgba(54, 255, 201, 0.24);
+  background: rgba(5, 30, 34, 0.78);
+  color: #7fffe3;
+}
+
+.neon-alert-error {
+  border: 1px solid rgba(255, 107, 147, 0.26);
+  background: rgba(44, 11, 27, 0.82);
+  color: #ff8eb0;
+}
+
+.neon-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(86, 250, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(86, 250, 255, 0.06) 100%
+  );
+  background-size: 200% 100%;
+  animation: neon-pulse 1.6s linear infinite;
+}
+
+@keyframes neon-pulse {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.auth-shell .cl-card,
+.auth-shell .cl-rootBox,
+.auth-shell .cl-cardBox {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.auth-shell .cl-formButtonPrimary,
+.auth-shell .cl-socialButtonsBlockButton {
+  border-radius: 1rem !important;
 }
