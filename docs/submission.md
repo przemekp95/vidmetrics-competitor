@@ -10,6 +10,7 @@ This repo now reflects a signed-in B2B MVP rather than a mock-checkout demo:
 - Stripe sandbox subscription checkout with seat-based pricing
 - webhook-driven billing activation
 - paid account workflows for durable reports, weekly tracking, and multi-channel benchmarks
+- shared neon Pixi/WebGL visual system across workspace, auth, checkout return, and legal routes
 
 ## Architecture
 
@@ -36,6 +37,18 @@ boundaries without introducing heavyweight infrastructure patterns for their own
 - `FeatureAccessPolicy` owns entitlement decisions
 - command and query handlers depend on repository and gateway ports
 - HTTP route handlers remain thin and do not own billing or authorization rules
+
+### Frontend Presentation Boundary
+
+- the visual rewrite stays on the presentation side; billing, entitlements, and analysis rules did
+  not move into Pixi components
+- `VisualRoot` mounts one client-only `VisualStage` for the whole app, with route presets selected
+  from pathname
+- Pixi renders background fields and metric geometry, while forms, tables, navigation, tooltips,
+  and accessibility semantics remain in the DOM
+- the auth routes use a shared Clerk appearance object so the hosted auth UI stays legible inside
+  the dark shell
+- WebGL failure falls back to static DOM-safe surfaces instead of blank canvases
 
 ### Messaging Boundary
 
@@ -103,14 +116,16 @@ Production URL:
 Recommended smoke:
 
 1. open `/` and confirm signed-out users are redirected to Clerk sign-in
-2. sign in
-3. analyze `@MKBHD`
-4. export CSV and save a current-session snapshot
-5. confirm paid workflows are locked
-6. start Stripe sandbox checkout
-7. complete the hosted checkout with a test card
-8. verify the app lands on `/checkout/return?session_id=...` without a second sign-in
-9. verify webhook delivery changes billing state and unlocks paid workflows
+2. confirm the auth page is readable and the Clerk widget matches the dark shell
+3. sign in
+4. analyze `@MKBHD`
+5. export CSV and save a current-session snapshot
+6. confirm the Pixi momentum surface renders, or cleanly falls back if WebGL is unavailable
+7. confirm paid workflows are locked
+8. start Stripe sandbox checkout
+9. complete the hosted checkout with a test card
+10. verify the app lands on `/checkout/return?session_id=...` without a second sign-in
+11. verify webhook delivery changes billing state and unlocks paid workflows
 
 ## Production Docs
 

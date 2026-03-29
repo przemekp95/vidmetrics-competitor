@@ -11,6 +11,10 @@
 - Postgres persistence for commercial accounts, durable reports, tracked channels, and processed webhook events
 - free current-session snapshots kept separate from durable paid storage
 - accessibility fixes for the checkout drawer, status messages, visible link affordances, and interactive border contrast
+- shared Pixi/WebGL visual layer with route presets for workspace, paid routes, auth, checkout
+  return, and legal pages
+- static fallback behavior when WebGL init is unavailable, so the UI remains usable without canvas rendering
+- shared Clerk auth appearance to keep sign-in and sign-up content readable inside the dark shell
 
 ## Production Later
 
@@ -22,6 +26,9 @@
 - security headers and CSP baseline
 - monitoring, alerting, and incident playbooks
 - formal migration workflow instead of lazy schema creation
+- signed-in browser verification of Clerk account surfaces on the deployed domain, including the
+  `UserButton` account menu
+- GPU/performance profiling and budgets for Pixi scenes on lower-end devices
 - full accessibility audit across the repo and post-launch regression process
 - review whether the public `session_id` return-state route remains the desired production shape or
   should be replaced by a tighter signed handoff pattern on the deployed domain

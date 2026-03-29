@@ -5,7 +5,9 @@ to access the main workspace on `/`, analyze a public channel, filter and export
 shortlist, save temporary current-session snapshots, and upgrade through Stripe-hosted sandbox
 Checkout. Paid workflows unlock only after Stripe webhooks confirm subscription billing. The Stripe
 return page is intentionally public so post-checkout billing state can resolve by `session_id`
-without depending on an immediate Clerk re-sync after cross-origin navigation.
+without depending on an immediate Clerk re-sync after cross-origin navigation. The current frontend
+also uses a shared neon Pixi/WebGL visual system with route-level scene presets and hard fallbacks
+when WebGL is unavailable.
 
 Live URL: `https://vidmetrics-competitor.vercel.app`
 
@@ -36,6 +38,18 @@ The repo uses a pragmatic DDD and CQRS split:
 
 This is intentionally not a heavy enterprise rewrite. The domain keeps business rules, while
 transport and infrastructure stay thin.
+
+## Frontend Visual System
+
+- shared client-only `VisualStage` mounted once in the app shell
+- route-level scene presets for `workspace`, `reports`, `tracking`, `benchmarks`,
+  `checkout_return`, `auth`, and `legal`
+- DOM-over-canvas composition: Pixi handles background motion and chart geometry, while forms,
+  tables, labels, buttons, and status messages remain semantic DOM
+- Pixi-rendered momentum and benchmark surfaces
+- hard WebGL fallback so unsupported browsers still get a usable static UI instead of a broken canvas
+- shared Clerk appearance theme for auth routes so the sign-in and sign-up surfaces stay readable
+  inside the dark neon shell
 
 ## Auth And Route Behavior
 
@@ -158,11 +172,14 @@ npm run build
 ## Smoke Checklist
 
 - visit `/` and confirm signed-out users are redirected to Clerk sign-in
+- confirm the sign-in page remains readable inside the dark auth shell
 - sign in or sign up
 - analyze `https://www.youtube.com/@MKBHD`
 - filter and sort the shortlist
 - export CSV
 - save a current-session snapshot
+- confirm the Pixi momentum chart renders, or that the fallback surface appears cleanly if WebGL
+  is unavailable
 - confirm durable reports, weekly tracking, and benchmarks stay locked pre-checkout
 - open the pricing drawer and start Stripe sandbox checkout
 - complete checkout with a Stripe test card
