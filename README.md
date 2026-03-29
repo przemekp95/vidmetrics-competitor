@@ -91,7 +91,13 @@ Install:
 
 ```bash
 npm install
-copy .env.example .env.local
+cp .env.example .env.local
+```
+
+On Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env.local
 ```
 
 Fill `.env.local`:
@@ -100,10 +106,16 @@ Fill `.env.local`:
 YOUTUBE_API_KEY=your_youtube_data_api_key_here
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
 CLERK_SECRET_KEY=sk_test_...
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/
+NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/
 DATABASE_URL=postgres://...
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 ```
+
+If you copied `.env.example`, the Clerk route variables are already present with the correct local defaults.
 
 Optional Stripe price overrides:
 
