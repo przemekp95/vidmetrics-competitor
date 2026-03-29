@@ -83,13 +83,18 @@ export class CommercialAccount {
   applyBillingEvent(event: BillingLifecycleEvent) {
     switch (event.type) {
       case "checkout_session_completed":
-        return new CommercialAccount(this.userId, "pending_payment", this.selection, {
+        return new CommercialAccount(
+          this.userId,
+          this.resolveStatusAfterCheckoutSessionCompleted(),
+          this.selection,
+          {
           ...this.stripeState,
           stripeCustomerId: event.stripeCustomerId,
           stripeSubscriptionId: event.stripeSubscriptionId,
           checkoutSessionId: event.checkoutSessionId,
           checkoutCompletedAt: event.occurredAt,
-        });
+          },
+        );
       case "invoice_paid":
         return new CommercialAccount(this.userId, "active", this.selection, {
           ...this.stripeState,
@@ -129,6 +134,16 @@ export class CommercialAccount {
         "Complete an active paid checkout before using this feature.",
       );
     }
+  }
+
+  private resolveStatusAfterCheckoutSessionCompleted(): CheckoutStatus {
+    // Stripe can deliver checkout completion after invoice.paid.
+    // Preserve any stronger billing state that was already confirmed.
+    if (this.status === "active" || this.status === "past_due" || this.status === "canceled") {
+      return this.status;
+    }
+
+    return "pending_payment";
   }
 
   toSummary(): CommercialAccountSummary {

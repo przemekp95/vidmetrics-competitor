@@ -167,6 +167,70 @@ describe("upgrade checkout handlers", () => {
     expect(processedEventRepository.markProcessed).toHaveBeenCalledWith("evt_paid");
   });
 
+  it("keeps the account active when checkout.session.completed is processed after invoice.paid", async () => {
+    const selection = new UpgradeCatalogPolicy(catalog).createSelection({
+      planId: "team",
+      billingCycle: "monthly",
+      seats: 5,
+    });
+    let account = CommercialAccount.create("user_123").beginCheckout({
+      selection,
+      stripeCustomerId: "cus_123",
+      checkoutSessionId: "cs_test_123",
+    });
+    const repository = {
+      getByUserId: vi.fn(async () => account),
+      getByStripeCustomerId: vi.fn(async () => account),
+      getByStripeSubscriptionId: vi.fn(async () => account),
+      getByCheckoutSessionId: vi.fn().mockResolvedValue(null),
+      save: vi.fn(async (nextAccount: CommercialAccount) => {
+        account = nextAccount;
+      }),
+    };
+    const processedEventRepository = {
+      hasProcessed: vi.fn().mockResolvedValue(false),
+      markProcessed: vi.fn().mockResolvedValue(undefined),
+    };
+    const handle = createApplyBillingWebhookCommandHandler({
+      repository,
+      processedEventRepository,
+    });
+
+    await handle({
+      event: {
+        type: "invoice_paid",
+        eventId: "evt_paid",
+        stripeCustomerId: "cus_123",
+        stripeSubscriptionId: "sub_123",
+        occurredAt: "2026-03-29T06:12:20.000Z",
+      },
+    });
+    await handle({
+      event: {
+        type: "checkout_session_completed",
+        eventId: "evt_checkout",
+        userId: "user_123",
+        stripeCustomerId: "cus_123",
+        stripeSubscriptionId: "sub_123",
+        checkoutSessionId: "cs_test_123",
+        occurredAt: "2026-03-29T06:12:21.000Z",
+      },
+    });
+
+    expect(account.toSummary()).toMatchObject({
+      status: "active",
+      stripeSubscriptionId: "sub_123",
+      checkoutCompletedAt: "2026-03-29T06:12:21.000Z",
+      lastPaidAt: "2026-03-29T06:12:20.000Z",
+      entitlements: [
+        "durable_reports",
+        "weekly_tracking",
+        "multi_channel_benchmarks",
+      ],
+    });
+    expect(repository.save).toHaveBeenCalledTimes(2);
+  });
+
   it("rejects lifecycle events when no commercial account matches the webhook payload", async () => {
     const handle = createApplyBillingWebhookCommandHandler({
       repository: {
